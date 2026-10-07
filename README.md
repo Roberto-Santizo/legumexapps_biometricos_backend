@@ -1,6 +1,13 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <a href="https://nestjs.com/" target="_blank">
+    <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="NestJS Logo" />
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://agroindustrialegumex.com/" target="_blank">
+    <img src="https://legumexappsapi-storage.s3.us-east-1.amazonaws.com/resources/LOGO_LX_V2.png" width="180" alt="Legumex Logo" />
+  </a>
 </p>
+
 
 # LegumexApps Biometricos Backend
 
