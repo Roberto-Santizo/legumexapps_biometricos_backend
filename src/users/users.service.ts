@@ -1,20 +1,19 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
+import { FindOptionsSelect, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { PaginationDto } from '../common/dto/pagination.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { User } from './entities/user.entity.js';
-import { PaginationDto } from '../common/dto/pagination.dto.js';
 
 @Injectable()
 export class UsersService {
+  private fields: FindOptionsSelect<User> = { id: true, name: true, email: true, createdAt: true };
 
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {
-
-  }
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     //VALIDATION EMAIL
@@ -23,12 +22,14 @@ export class UsersService {
     //TODO: HASH PASSWORD
     const user = this.userRepository.create(createUserDto);
     await this.userRepository.save(user);
-    return user;
+    const { password, ...rest } = user;
+    return rest;
   }
 
   async findAll(paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
     const users = await this.userRepository.find({
+      select: this.fields,
       take: limit,
       skip: offset
     });
@@ -36,7 +37,7 @@ export class UsersService {
   }
 
   async findOne(id: number) {
-    const user = await this.userRepository.findOneBy({ id });
+    const user = await this.userRepository.find({ where: { id }, select: this.fields });
     if (!user) throw new NotFoundException(`El usuario con ID ${id} no existe`);
     return user;
   }
@@ -50,7 +51,8 @@ export class UsersService {
     try {
       await this.userRepository.save(user);
 
-      return user;
+      const { password, ...rest } = user;
+      return rest;
     } catch (error) {
       this._handleDbExceptions(error);
     }
@@ -64,9 +66,9 @@ export class UsersService {
   private async _validateEmailExists(email: string, id?: number) {
     const user = await this.userRepository.findOneBy({ email });
 
-    if(user && !id) throw new BadRequestException(`El email ${email} ya se encuentra registrado`);
-    if((user && id) && user.id != id) throw new BadRequestException(`El email ${email} ya se encuentra registrado`);
-    
+    if (user && !id) throw new BadRequestException(`El email ${email} ya se encuentra registrado`);
+    if ((user && id) && user.id != id) throw new BadRequestException(`El email ${email} ya se encuentra registrado`);
+
     return user;
   }
 }
