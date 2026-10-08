@@ -42,13 +42,13 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    if (updateUserDto.email != null) await this._validateEmailExists(updateUserDto.email);
+    if (updateUserDto.email != null) await this._validateEmailExists(updateUserDto.email, id);
 
     const user = await this.userRepository.preload({ id, ...updateUserDto });
     if (!user) throw new NotFoundException(`El usuario con ID ${id} no existe`);
 
     try {
-      this.userRepository.save(user);
+      await this.userRepository.save(user);
 
       return user;
     } catch (error) {
@@ -61,9 +61,12 @@ export class UsersService {
     throw new InternalServerErrorException("Unspected error, check server logs");
   }
 
-  private async _validateEmailExists(email: string) {
+  private async _validateEmailExists(email: string, id?: number) {
     const user = await this.userRepository.findOneBy({ email });
-    if (user) throw new BadRequestException(`El correo ${email} ya se encuentra registrado`);
+
+    if(user && !id) throw new BadRequestException(`El email ${email} ya se encuentra registrado`);
+    if((user && id) && user.id != id) throw new BadRequestException(`El email ${email} ya se encuentra registrado`);
+    
     return user;
   }
 }
