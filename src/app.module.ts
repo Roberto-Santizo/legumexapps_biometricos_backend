@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module.js';
 import { CommonModule } from './common/common.module.js';
 import { UsersModule } from './users/users.module.js';
+import { EmployeesModule } from './employees/employees.module.js';
+import { MSSQL_CONNECTION } from './common/constants/connections.js';
 
 @Module({
   imports: [
@@ -15,12 +17,28 @@ import { UsersModule } from './users/users.module.js';
       database: process.env.DB_NAME,
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
-      autoLoadEntities: process.env.APP_ENV == 'dev' ? true : false,
+      autoLoadEntities: true,
       synchronize: process.env.APP_ENV == 'dev' ? true : false,
+    }),
+    TypeOrmModule.forRoot({
+      name: MSSQL_CONNECTION,
+      type: 'mssql',
+      host: process.env.MSSQL_HOST,
+      port: +(process.env.MSSQL_PORT ?? 1433),
+      database: process.env.MSSQL_NAME,
+      username: process.env.MSSQL_USERNAME,
+      password: process.env.MSSQL_PASSWORD,
+      autoLoadEntities: true,
+      synchronize: false,
+      options: {
+        encrypt: false,
+        trustServerCertificate: true,
+      },
     }),
     CommonModule,
     AuthModule,
     UsersModule,
+    EmployeesModule,
   ],
 })
 export class AppModule { }
