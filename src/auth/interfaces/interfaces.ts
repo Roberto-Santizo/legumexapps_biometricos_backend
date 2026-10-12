@@ -6,6 +6,14 @@ export interface AuthUserInterface {
     token: string;
 }
 
+export interface UserInterface {
+    id: string;
+    name: string;
+    email: string;
+    roles: string[];
+    isActive: boolean;
+}
+
 export interface JwtPayload {
     id: string;
 }
