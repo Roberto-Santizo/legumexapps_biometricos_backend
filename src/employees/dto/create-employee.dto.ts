@@ -16,6 +16,9 @@ export class CreateEmployeeDto {
     pin: string;
 
     @IsString()
+    auth_dept_id: string;
+
+    @IsString()
     @MinLength(10)
     photo_path: string;
 }

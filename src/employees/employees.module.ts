@@ -6,11 +6,13 @@ import { Employee } from './entities/employee.entity.js';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { CommonModule } from '../common/common.module.js';
+import { AuthDepartmentModule } from '../auth-department/auth-department.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Employee], MSSQL_CONNECTION),
     
+    AuthDepartmentModule,
     AuthModule,
     CommonModule,
   ],

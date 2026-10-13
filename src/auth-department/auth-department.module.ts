@@ -14,6 +14,7 @@ import { CommonModule } from '../common/common.module.js';
     TypeOrmModule.forFeature([AuthDepartment], MSSQL_CONNECTION),
     AuthModule,
     CommonModule
-  ]
+  ],
+  exports: [AuthDepartmentService]
 })
 export class AuthDepartmentModule {}

@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { EmployeesService } from './employees.service.js';
-import { CreateEmployeeDto } from './dto/create-employee.dto.js';
-import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { ValidRoles } from '../auth/interfaces/interfaces.js';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
+import { EmployeesService } from './employees.service.js';
+import { GetUser } from '../auth/decorators/get-user.decorator.js';
+import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
+import { User } from '../auth/entities/user.entity.js';
+import { ValidRoles } from '../auth/interfaces/interfaces.js';
 
 @Controller('employees')
 export class EmployeesController {
@@ -12,8 +14,8 @@ export class EmployeesController {
 
   @Post()
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
-  create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeesService.create(createEmployeeDto);
+  create(@Body() createEmployeeDto: CreateEmployeeDto, @GetUser() user: User) {
+    return this.employeesService.create(createEmployeeDto, user);
   }
 
   @Get()
@@ -30,8 +32,8 @@ export class EmployeesController {
 
   @Patch(':id')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
-  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeesService.update(id, updateEmployeeDto);
+  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto, @GetUser() user: User) {
+    return this.employeesService.update(id, updateEmployeeDto, user);
   }
 
   @Delete(':id')
