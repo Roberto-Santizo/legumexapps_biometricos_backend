@@ -2,6 +2,7 @@ import { AuthDepartment } from './entities/auth-department.entity.js';
 import { AuthDepartmentQueryDto } from './dto/auth-department-query.dto.js';
 import { CreateAuthDepartmentDto } from './dto/create-auth-department.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
+import { DateHandlerService } from '../common/services/date-handler.service.js';
 import { Filters } from '../common/providers/filters.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -19,7 +20,8 @@ export class AuthDepartmentService {
 
     private readonly filters: Filters,
     private readonly databaseHelpers: DatabaseHelpers,
-    private readonly idGenerator: IdGeneratorService
+    private readonly idGenerator: IdGeneratorService,
+    private readonly dateHandler: DateHandlerService
   ) { }
 
   async create(createAuthDepartmentDto: CreateAuthDepartmentDto, user: User) {
@@ -30,7 +32,9 @@ export class AuthDepartmentService {
         id,
         creater_name: user.name,
         creater_code: user.name,
-        parent_id: "4028898594b7f9660194b7fb25b00004"
+        parent_id: "4028898594b7f9660194b7fb25b00004",
+        create_time: this.dateHandler.getCurrentDate(),
+        sort: '99999'
       });
 
       const dbDepartment = await this.authDepartmentRepository.save(department);
@@ -61,8 +65,15 @@ export class AuthDepartmentService {
     return authDepartment;
   }
 
-  async update(id: string, updateAuthDepartmentDto: UpdateAuthDepartmentDto) {
-    const department = await this.authDepartmentRepository.preload({ id, ...updateAuthDepartmentDto });
+  async update(id: string, updateAuthDepartmentDto: UpdateAuthDepartmentDto, user: User) {
+    const department = await this.authDepartmentRepository.preload({
+      id,
+      ...updateAuthDepartmentDto,
+      update_time: this.dateHandler.getCurrentDate(),
+      updater_code: user.name,
+      updater_name: user.name
+    });
+
     if (!department) throw new NotFoundException(`El departamento con ID ${id} no existe`);
     await this.authDepartmentRepository.save(department);
     return department;

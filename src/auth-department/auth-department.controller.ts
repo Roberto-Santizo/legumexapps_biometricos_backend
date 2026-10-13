@@ -32,8 +32,8 @@ export class AuthDepartmentController {
 
   @Patch(':id')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
-  update(@Param('id') id: string, @Body() updateAuthDepartmentDto: UpdateAuthDepartmentDto) {
-    return this.authDepartmentService.update(id, updateAuthDepartmentDto);
+  update(@Param('id') id: string, @Body() updateAuthDepartmentDto: UpdateAuthDepartmentDto, @GetUser() user: User) {
+    return this.authDepartmentService.update(id, updateAuthDepartmentDto, user);
   }
 
   @Delete(':id')

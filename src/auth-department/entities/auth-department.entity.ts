@@ -25,6 +25,9 @@ export class AuthDepartment {
     @Column('text')
     updater_code: string;
 
+    @Column('text')
+    sort: string;
+
     @Column('text',{
         default: '4028898594b7f9660194b7fb25b00004'
     }
