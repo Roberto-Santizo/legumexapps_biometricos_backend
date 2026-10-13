@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryColumn, UpdateDateColumn } from "typeorm";
+import { type Employee } from "../../employees/entities/employee.entity.js";
 
 @Entity('auth_department')
 export class AuthDepartment {
@@ -43,5 +44,11 @@ export class AuthDepartment {
         default: Date.now()
     })
     update_time: Date;
+
+    @OneToMany(
+        "Employee",
+        (employee: Employee) => employee.authDepartment,
+    )
+    employees: Employee[];
 
 }

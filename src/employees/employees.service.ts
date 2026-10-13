@@ -3,6 +3,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { DateHandlerService } from '../common/services/date-handler.service.js';
 import { Employee } from './entities/employee.entity.js';
+import { EmployeeResource } from './resources/employee.resource.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
 import { Filters } from '../common/providers/filters.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
@@ -38,7 +39,8 @@ export class EmployeesService {
         enabled_credential: 1,
         exception_flag: 0,
         app_authorization: 1,
-        status: 0
+        status: 0,
+        person_type: 0
       });
       await this.employeeRepository.save(employee);
 
@@ -55,10 +57,10 @@ export class EmployeesService {
     const employees = await this.employeeRepository.find({
       take: limit,
       skip: offset,
-      where
+      where,
     });
 
-    return employees;
+    return EmployeeResource.collection(employees);
   }
 
   async findOne(id: string) {

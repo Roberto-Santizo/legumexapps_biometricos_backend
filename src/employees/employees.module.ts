@@ -1,22 +1,22 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { EmployeesService } from './employees.service.js';
-import { EmployeesController } from './employees.controller.js';
-import { Employee } from './entities/employee.entity.js';
-import { MSSQL_CONNECTION } from '../common/constants/connections.js';
+import { AuthDepartmentModule } from '../auth-department/auth-department.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { CommonModule } from '../common/common.module.js';
-import { AuthDepartmentModule } from '../auth-department/auth-department.module.js';
+import { Employee } from './entities/employee.entity.js';
+import { EmployeesController } from './employees.controller.js';
+import { EmployeesService } from './employees.service.js';
+import { Module } from '@nestjs/common';
+import { MSSQL_CONNECTION } from '../common/constants/connections.js';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Employee], MSSQL_CONNECTION),
-    
     AuthDepartmentModule,
     AuthModule,
     CommonModule,
   ],
   controllers: [EmployeesController],
   providers: [EmployeesService],
+  exports: [TypeOrmModule]
 })
-export class EmployeesModule {}
+export class EmployeesModule { }

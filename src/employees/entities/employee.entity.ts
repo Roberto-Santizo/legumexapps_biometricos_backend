@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { AuthDepartment } from '../../auth-department/entities/auth-department.entity.js';
 
 @Entity('pers_person')
 export class Employee {
@@ -19,18 +20,21 @@ export class Employee {
 
   @Column()
   auth_dept_id: string;
-  
+
   @Column('integer')
   enabled_credential: number;
-  
+
   @Column('integer')
   exception_flag: number;
- 
+
   @Column('integer')
   app_authorization: number;
-  
+
   @Column('integer')
   status: number;
+  
+  @Column('integer')
+  person_type: number;
 
   @Column()
   photo_path: string;
@@ -56,4 +60,12 @@ export class Employee {
     default: Date.now()
   })
   update_time: Date;
+
+  @ManyToOne(
+    () => AuthDepartment,
+    authDepartment => authDepartment.employees,
+    { eager: true }
+  )
+  @JoinColumn({ name: 'auth_dept_id' })
+  authDepartment: AuthDepartment;
 }
