@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module.js';
 import { EmployeesModule } from './employees/employees.module.js';
 import { MSSQL_CONNECTION } from './common/constants/connections.js';
 import { AuthDepartmentModule } from './auth-department/auth-department.module.js';
+import { AccLevelModule } from './acc-level/acc-level.module.js';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AuthDepartmentModule } from './auth-department/auth-department.module.j
     UsersModule,
     EmployeesModule,
     AuthDepartmentModule,
+    AccLevelModule,
   ],
 })
 export class AppModule { }
