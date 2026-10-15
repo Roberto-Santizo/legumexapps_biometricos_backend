@@ -38,9 +38,12 @@ export class EmployeesController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Crear o actualizar empleado',
-    description: 'Envía el empleado a la API de ZKBioAccess (/person/add), que lo crea o lo actualiza si el PIN ya existe. No devuelve cuerpo.',
+    description: 'Envía el empleado a la API de ZKBioAccess (/person/add), que lo crea o lo actualiza si el PIN ya existe.',
   })
-  @ApiCreatedResponse({ description: 'Empleado enviado a ZKBioAccess correctamente (respuesta sin cuerpo)' })
+  @ApiCreatedResponse({
+    description: 'Empleado enviado a ZKBioAccess correctamente',
+    schema: { type: 'string', example: 'Empleado Creado/Actulizado Correctamente' },
+  })
   @ApiBadRequestResponse({ description: 'Datos inválidos (validación del body o propiedades no permitidas)' })
   @ApiInternalServerErrorResponse({
     description: 'Error al comunicarse con ZKBioAccess o al crear/actualizar el empleado ("Please check server logs")',
@@ -98,6 +101,23 @@ export class EmployeesController {
 
   @Post('/status/inactiveEmployee/:id')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @ApiOperation({
+    summary: 'Dar de baja empleado',
+    description: 'Busca el empleado por ID y lo da de baja en ZKBioAccess (/person/leave) con tipo de baja 1 y la fecha actual.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del empleado (32 caracteres)',
+    example: '4028898594b7f9660194b7fb5d7a0500',
+  })
+  @ApiCreatedResponse({
+    description: 'Empleado dado de baja correctamente',
+    schema: { type: 'string', example: 'Empleado dado de baja correctamente.' },
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'El empleado no existe o hubo un error al comunicarse con ZKBioAccess ("Please check server logs")',
+  })
   inactiveEmployeeById(@Param('id') id: string) {
     return this.employeesService.inactiveEmployeeById(id);
   }

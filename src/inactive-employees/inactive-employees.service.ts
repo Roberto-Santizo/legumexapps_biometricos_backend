@@ -6,6 +6,8 @@ import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { Repository } from 'typeorm';
 import { ZkBioaccessService } from '../employees/services/zkbioaccess.service.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
+import { InactiveEmployeesQueryDto } from './dto/inactive-employees-query.dto.js';
+import { Filters } from '../common/providers/filters.js';
 
 @Injectable()
 export class InactiveEmployeesService {
@@ -15,11 +17,19 @@ export class InactiveEmployeesService {
 
     private readonly zkBioaccessService: ZkBioaccessService,
     private readonly databaseHelpers: DatabaseHelpers,
+    private readonly filters: Filters
   ) { }
 
 
-  async findAll() {
-    const inactiveEmployees = await this.inactiveEmployeeRepository.find();
+  async findAll(inactiveEmployeesQueryDto: InactiveEmployeesQueryDto) {
+    const { limit = 10, offset = 0 } = inactiveEmployeesQueryDto;
+    const where = this.filters.buildWhere<InactiveEmployee, InactiveEmployeesQueryDto>(inactiveEmployeesQueryDto, { like: ['name'] });
+
+    const inactiveEmployees = await this.inactiveEmployeeRepository.find({
+      take: limit,
+      skip: offset,
+      where
+    });
     return InactiveEmployeeResource.inactiveEmployeeCollection(inactiveEmployees);
   }
 
