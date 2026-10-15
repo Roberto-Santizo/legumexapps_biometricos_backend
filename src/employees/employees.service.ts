@@ -15,41 +15,26 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 import { User } from '../auth/entities/user.entity.js';
 import { AccLevelEmployee } from '../acc-level/entities/acc_level_employee.js';
 import { AccLevelEmployeeResource } from '../acc-level/resources/acc_level_employee.resource.js';
+import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 
 @Injectable()
 export class EmployeesService {
   constructor(
     @InjectRepository(Employee, MSSQL_CONNECTION)
     private readonly employeeRepository: Repository<Employee>,
-    
+
     @InjectRepository(AccLevelEmployee, MSSQL_CONNECTION)
     private readonly accLevelEmployeeRepository: Repository<AccLevelEmployee>,
 
-    private readonly authDepartmentService: AuthDepartmentService,
     private readonly filters: Filters,
     private readonly databaseHelpers: DatabaseHelpers,
-    private readonly idGenerator: IdGeneratorService,
-    private readonly dateHandler: DateHandlerService
+    private readonly dateHandler: DateHandlerService,
+    private readonly zkBioaccessService: ZkBioaccessService
   ) { }
 
   async create(createEmployeeDto: CreateEmployeeDto, user: User) {
     try {
-      await this.authDepartmentService.findOne(createEmployeeDto.auth_dept_id);
-      const employee = this.employeeRepository.create({
-        ...createEmployeeDto,
-        id: this.idGenerator.generate32CaracterId(),
-        creater_code: user.name,
-        creater_name: user.name,
-        create_time: this.dateHandler.getCurrentDate(),
-        enabled_credential: 1,
-        exception_flag: 0,
-        app_authorization: 1,
-        status: 0,
-        person_type: 0
-      });
-      await this.employeeRepository.save(employee);
-
-      return employee;
+      await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto);
     } catch (error) {
       this.databaseHelpers.handleExeptions(error);
     }
@@ -95,7 +80,7 @@ export class EmployeesService {
     }
   }
 
-  async getEmployeeLevels(id: string){
+  async getEmployeeLevels(id: string) {
     const employeeLevels = await this.accLevelEmployeeRepository.find({ where: { pers_person_id: id } });
     return AccLevelEmployeeResource.accLevelEmployeeCollection(employeeLevels);
   }

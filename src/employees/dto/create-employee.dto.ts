@@ -1,24 +1,31 @@
-import { IsString, MinLength } from "class-validator";
+import { IsDate, IsOptional, IsString, MinLength } from "class-validator";
 
 export class CreateEmployeeDto {
-    
+
     @IsString()
     @MinLength(10)
     name: string;
-    
+
     @IsString()
     @MinLength(5)
-    last_name: string;
-    
-    
+    lastName: string;
+
     @IsString()
     @MinLength(5)
     pin: string;
 
     @IsString()
-    auth_dept_id: string;
+    deptCode: string;
 
     @IsString()
     @MinLength(10)
-    photo_path: string;
+    accLevelIds: string;
+
+    @IsString()
+    @IsOptional()
+    accStartTime: string;
+
+    @IsString()
+    @IsOptional()
+    accEndTime: string;
 }
