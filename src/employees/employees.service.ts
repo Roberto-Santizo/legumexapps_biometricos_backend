@@ -61,25 +61,6 @@ export class EmployeesService {
     return employee;
   }
 
-  async update(id: string, updateEmployeeDto: UpdateEmployeeDto, user: User) {
-    try {
-      const employee = await this.employeeRepository.preload({
-        id,
-        ...updateEmployeeDto,
-        update_time: this.dateHandler.getCurrentDate(),
-        updater_code: user.name,
-        updater_name: user.name
-      });
-
-      if (!employee) throw new NotFoundException(`El empleado con ID ${id} no existe`);
-      await this.employeeRepository.save(employee);
-
-      return employee;
-    } catch (error) {
-      this.databaseHelpers.handleExeptions(error);
-    }
-  }
-
   async getEmployeeLevels(id: string) {
     const employeeLevels = await this.accLevelEmployeeRepository.find({ where: { pers_person_id: id } });
     return AccLevelEmployeeResource.accLevelEmployeeCollection(employeeLevels);
