@@ -118,4 +118,10 @@ export class AccLevelService {
       this.databaseHelper.handleExeptions(error);
     }
   }
+
+  async deleteAccLevelDoor(id: string) {
+    const { affected } = await this.accLevelDoorRepository.delete({ id: id });
+    if (affected == 0) throw new NotFoundException(`El permiso con ID ${id} no existe`);
+    return `Puerta eliminada de nivel correctamente`;
+  }
 }

@@ -54,4 +54,10 @@ export class AccLevelController {
   assignDoorToLevel(@Body() assignDoorToLevelDto: AssignDoorToLevelDto, @GetUser() user: User) {
     return this.accLevelService.assignDoorToLevel(assignDoorToLevelDto, user);
   }
+  
+  @Delete('/doors/deleteAccLevelDoor/:id')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  deleteAccLevelDoor(@Param('id') id: string) {
+    return this.accLevelService.deleteAccLevelDoor(id);
+  }
 }
