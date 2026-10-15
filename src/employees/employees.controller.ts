@@ -118,7 +118,7 @@ export class EmployeesController {
   @ApiInternalServerErrorResponse({
     description: 'El empleado no existe o hubo un error al comunicarse con ZKBioAccess ("Please check server logs")',
   })
-  inactiveEmployeeById(@Param('id') id: string) {
-    return this.employeesService.inactiveEmployeeById(id);
+  inactiveEmployeeById(@Param('id') id: string, @GetUser() user: User) {
+    return this.employeesService.inactiveEmployeeById(id, user);
   }
 }

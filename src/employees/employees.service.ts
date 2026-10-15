@@ -13,6 +13,8 @@ import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
+import { EmailService } from '../common/services/email.service.js';
+import { inactivateEmployeeEmail } from '../common/emails/inactivate-employee.email.js';
 
 @Injectable()
 export class EmployeesService {
@@ -27,6 +29,7 @@ export class EmployeesService {
     private readonly databaseHelpers: DatabaseHelpers,
     private readonly dateHandler: DateHandlerService,
     private readonly zkBioaccessService: ZkBioaccessService,
+    private readonly emailService: EmailService
   ) { }
 
   async create(createEmployeeDto: CreateEmployeeDto, user: User) {
@@ -65,12 +68,22 @@ export class EmployeesService {
     return AccLevelEmployeeResource.accLevelEmployeeCollection(employeeLevels);
   }
 
-  async inactiveEmployeeById(id: string) {
+  async inactiveEmployeeById(id: string, user: User) {
     try {
       const employee = await this.findOne(id);
       await this.zkBioaccessService.inactivateEmployee({ pin: employee.pin, leaveType: 1, leaveDate: this.dateHandler.getCurrentDate() });
-      return 'Empleado dado de baja correctamente.'
 
+      this.emailService.sendMail('Baja de Empleado', inactivateEmployeeEmail({
+        pin: employee.pin,
+        last_name: employee.last_name,
+        name: employee.name,
+        leave_date: this.dateHandler.getCurrentDate(),
+        created_at: this.dateHandler.getCurrentDate(),
+        department: employee.authDepartment.name,
+        updater_name: user.name,
+        updater_username: user.email
+      }))
+      return 'Empleado dado de baja correctamente.'
     } catch (error) {
       this.databaseHelpers.handleExeptions(error);
     }

@@ -5,10 +5,11 @@ import { Filters } from './providers/filters.js';
 import { IdGeneratorService } from './services/id-generator.service.js';
 import { DateHandlerService } from './services/date-handler.service.js';
 import { Http } from './config/http.js';
+import { EmailService } from './services/email.service.js';
 
 @Module({
   imports: [ConfigModule],
-  providers: [DatabaseHelpers, Filters, IdGeneratorService, DateHandlerService, Http],
-  exports: [DatabaseHelpers, Filters, IdGeneratorService, DateHandlerService, Http],
+  providers: [DatabaseHelpers, Filters, IdGeneratorService, DateHandlerService, Http, EmailService],
+  exports: [DatabaseHelpers, Filters, IdGeneratorService, DateHandlerService, Http, EmailService],
 })
 export class CommonModule { }
