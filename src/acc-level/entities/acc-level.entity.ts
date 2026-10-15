@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
+import { AccLevelDoor } from "./acc_level_door.entity.js";
 
 
 @Entity('acc_level')
@@ -18,7 +19,7 @@ export class AccLevel {
 
     @Column('text')
     creater_name: string;
-   
+
     @Column('text')
     updater_name: string;
 
@@ -30,4 +31,10 @@ export class AccLevel {
 
     @Column('datetime')
     update_time: Date;
+
+    @OneToMany(
+        () => AccLevelDoor,
+        accLevelDoor => accLevelDoor.accLevel
+    )
+    accLevelDoors: AccLevelDoor[];
 }

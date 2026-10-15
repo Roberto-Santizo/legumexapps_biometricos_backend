@@ -7,6 +7,7 @@ import { User } from '../auth/entities/user.entity.js';
 import { Auth } from '../auth/decorators/auth.decorator.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
 import { AccLevelQueryDto } from './dto/acc-level-query.dto.js';
+import { AssignDoorToLevelDto } from './dto/assign-door-to-level.dto.js';
 
 @Controller('acc-level')
 export class AccLevelController {
@@ -36,9 +37,21 @@ export class AccLevelController {
     return this.accLevelService.update(id, updateAccLevelDto, user);
   }
 
+  @Get('/doors/getLevelDoors/:id')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  getLevelDoors(@Param('id') id: string) {
+    return this.accLevelService.getLevelDoors(id);
+  }
+
   @Get('/doors/getDoors')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
-  getDoors(){
+  getDoors() {
     return this.accLevelService.getDoors();
+  }
+
+  @Post('/doors/assignDoorToLevel')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  assignDoorToLevel(@Body() assignDoorToLevelDto: AssignDoorToLevelDto, @GetUser() user: User) {
+    return this.accLevelService.assignDoorToLevel(assignDoorToLevelDto, user);
   }
 }

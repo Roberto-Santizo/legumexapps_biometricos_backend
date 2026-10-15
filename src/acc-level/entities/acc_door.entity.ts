@@ -1,5 +1,6 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryColumn } from "typeorm";
 import { AccDevice } from "./acc_device.entity.js";
+import { AccLevelDoor } from "./acc_level_door.entity.js";
 
 
 @Entity('acc_door')
@@ -32,4 +33,10 @@ export class AccDoor {
     )
     @JoinColumn({ name: "dev_id" })
     device: AccDevice;
+
+    @OneToMany(
+        () => AccLevelDoor,
+        accLevelDoor => accLevelDoor.accLevel
+    )
+    accLevelDoors: AccLevelDoor[];
 }

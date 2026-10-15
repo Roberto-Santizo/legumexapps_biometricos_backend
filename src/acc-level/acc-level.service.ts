@@ -1,8 +1,12 @@
 import { AccDoor } from './entities/acc_door.entity.js';
 import { AccDoorResource } from './resources/acc_door.resource.js';
 import { AccLevel } from './entities/acc-level.entity.js';
+import { AccLevelDoor } from './entities/acc_level_door.entity.js';
+import { AccLevelDoorResource } from './resources/acc_level_door.resource.js';
 import { AccLevelQueryDto } from './dto/acc-level-query.dto.js';
+import { AssignDoorToLevelDto } from './dto/assign-door-to-level.dto.js';
 import { CreateAccLevelDto } from './dto/create-acc-level.dto.js';
+import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { DateHandlerService } from '../common/services/date-handler.service.js';
 import { Filters } from '../common/providers/filters.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
@@ -22,10 +26,14 @@ export class AccLevelService {
     @InjectRepository(AccDoor, MSSQL_CONNECTION)
     private readonly accDoorRepository: Repository<AccDoor>,
 
+    @InjectRepository(AccLevelDoor, MSSQL_CONNECTION)
+    private readonly accLevelDoorRepository: Repository<AccLevelDoor>,
+
 
     private readonly idGenerator: IdGeneratorService,
     private readonly dateHandler: DateHandlerService,
-    private readonly filters: Filters
+    private readonly filters: Filters,
+    private readonly databaseHelper: DatabaseHelpers
   ) { }
 
   async create(createAccLevelDto: CreateAccLevelDto, user: User) {
@@ -58,7 +66,7 @@ export class AccLevelService {
   }
 
   async findOne(id: string) {
-    const level = await this.accLevelRepository.findOneBy({ id });
+    const level = await this.accLevelRepository.findOne({ where: { id } });
     if (!level) throw new NotFoundException(`El nivel con ID ${id} no existe`);
     return level;
   }
@@ -83,5 +91,31 @@ export class AccLevelService {
   async getDoors() {
     const doors = await this.accDoorRepository.find();
     return AccDoorResource.collection(doors);
+  }
+
+  async getLevelDoors(id: string) {
+    const levelDoors = await this.accLevelDoorRepository.find({ where: { level_id: id }, relations: { 'accLevel': true } });
+    return AccLevelDoorResource.accLevelDoorCollection(levelDoors);
+  }
+
+  async assignDoorToLevel(assignDoorToLevelDto: AssignDoorToLevelDto, user: User) {
+    try {
+      const levelDoor = this.accLevelDoorRepository.create({
+        ...assignDoorToLevelDto,
+        update_time: this.dateHandler.getCurrentDate(),
+        create_time: this.dateHandler.getCurrentDate(),
+        id: this.idGenerator.generate32CaracterId(),
+        creater_code: user.email,
+        creater_name: user.name,
+        updater_code: user.email,
+        updater_name: user.name,
+      });
+
+      await this.accLevelDoorRepository.save(levelDoor);
+
+      return levelDoor;
+    } catch (error) {
+      this.databaseHelper.handleExeptions(error);
+    }
   }
 }
