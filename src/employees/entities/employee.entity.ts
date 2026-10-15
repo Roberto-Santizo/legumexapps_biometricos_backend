@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { AuthDepartment } from '../../auth-department/entities/auth-department.entity.js';
+import { AccLevelEmployee } from '../../acc-level/entities/acc_level_employee.js';
 
 @Entity('pers_person')
 export class Employee {
@@ -68,4 +69,11 @@ export class Employee {
   )
   @JoinColumn({ name: 'auth_dept_id' })
   authDepartment: AuthDepartment;
+
+  @OneToMany(
+    () => AccLevelEmployee,
+    accLevelEmployee => accLevelEmployee.employee
+  )
+
+  accLevelEmployee: AccLevelEmployee[];
 }

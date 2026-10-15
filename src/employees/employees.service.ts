@@ -13,12 +13,17 @@ import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { Repository } from 'typeorm';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 import { User } from '../auth/entities/user.entity.js';
+import { AccLevelEmployee } from '../acc-level/entities/acc_level_employee.js';
+import { AccLevelEmployeeResource } from '../acc-level/resources/acc_level_employee.resource.js';
 
 @Injectable()
 export class EmployeesService {
   constructor(
     @InjectRepository(Employee, MSSQL_CONNECTION)
     private readonly employeeRepository: Repository<Employee>,
+    
+    @InjectRepository(AccLevelEmployee, MSSQL_CONNECTION)
+    private readonly accLevelEmployeeRepository: Repository<AccLevelEmployee>,
 
     private readonly authDepartmentService: AuthDepartmentService,
     private readonly filters: Filters,
@@ -90,7 +95,8 @@ export class EmployeesService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} employee`;
+  async getEmployeeLevels(id: string){
+    const employeeLevels = await this.accLevelEmployeeRepository.find({ where: { pers_person_id: id } });
+    return AccLevelEmployeeResource.accLevelEmployeeCollection(employeeLevels);
   }
 }

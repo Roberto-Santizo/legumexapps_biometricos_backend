@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
 import { AccLevelDoor } from "./acc_level_door.entity.js";
+import { AccLevelEmployee } from "./acc_level_employee.js";
 
 
 @Entity('acc_level')
@@ -37,4 +38,11 @@ export class AccLevel {
         accLevelDoor => accLevelDoor.accLevel
     )
     accLevelDoors: AccLevelDoor[];
+
+    @OneToMany(
+        () => AccLevelEmployee,
+        accLevelEmployee => accLevelEmployee.employee
+    )
+
+    accLevelEmployee: AccLevelEmployee[];
 }

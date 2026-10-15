@@ -9,11 +9,12 @@ import { AuthModule } from '../auth/auth.module.js';
 import { AccDoor } from './entities/acc_door.entity.js';
 import { AccDevice } from './entities/acc_device.entity.js';
 import { AccLevelDoor } from './entities/acc_level_door.entity.js';
+import { AccLevelEmployee } from './entities/acc_level_employee.js';
 
 @Module({
   controllers: [AccLevelController],
   providers: [AccLevelService],
-  imports: [TypeOrmModule.forFeature([AccLevel, AccDoor, AccDevice, AccLevelDoor], MSSQL_CONNECTION), CommonModule, AuthModule],
+  imports: [TypeOrmModule.forFeature([AccLevel, AccDoor, AccDevice, AccLevelDoor, AccLevelEmployee], MSSQL_CONNECTION), CommonModule, AuthModule],
   exports: [TypeOrmModule]
 })
 export class AccLevelModule { }

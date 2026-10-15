@@ -36,9 +36,9 @@ export class EmployeesController {
     return this.employeesService.update(id, updateEmployeeDto, user);
   }
 
-  @Delete(':id')
+  @Get('/levels/getEmployeeLevels/:id')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
-  remove(@Param('id') id: string) {
-    return this.employeesService.remove(+id);
+  getEmployeeLevels(@Param('id') id: string) {
+    return this.employeesService.getEmployeeLevels(id);
   }
 }

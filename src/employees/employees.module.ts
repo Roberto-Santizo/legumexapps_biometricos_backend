@@ -7,10 +7,12 @@ import { EmployeesService } from './employees.service.js';
 import { Module } from '@nestjs/common';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AccLevelModule } from '../acc-level/acc-level.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Employee], MSSQL_CONNECTION),
+    AccLevelModule,
     AuthDepartmentModule,
     AuthModule,
     CommonModule,

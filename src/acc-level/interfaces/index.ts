@@ -8,6 +8,13 @@ export interface AccLevelDoorInterface extends AccDoorInterface {
     name: string;
 }
 
+export interface AccLevelEmployeeInterface {
+    id: string;
+    pers_person_id: string;
+    level_id: string;
+    level_name: string;
+}
+
 export interface AccLevelInterface {
     id: string;
     name: string;

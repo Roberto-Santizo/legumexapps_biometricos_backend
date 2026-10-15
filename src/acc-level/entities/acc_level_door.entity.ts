@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryColumn } from "typeorm";
 import { type AccLevel } from "./acc-level.entity.js";
 import { AccDoor } from "./acc_door.entity.js";
 
@@ -32,14 +32,14 @@ export class AccLevelDoor {
     @Column('text')
     updater_name: string;
 
-    @ManyToOne(
+    @OneToOne(
         "AccLevel",
         (accLevel: AccLevel) => accLevel.accLevelDoors
     )
     @JoinColumn({ name: 'level_id' })
     accLevel: AccLevel;
 
-    @ManyToOne(
+    @OneToOne(
         "AccDoor",
         (accDoor: AccDoor) => accDoor.accLevelDoors,
         { eager: true }
