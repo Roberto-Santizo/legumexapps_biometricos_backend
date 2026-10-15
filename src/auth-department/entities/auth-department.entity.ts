@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryColumn, UpdateDateColumn } from "typeorm";
 import { type Employee } from "../../employees/entities/employee.entity.js";
+import { InactiveEmployee } from "../../inactive-employees/entities/inactive-employee.entity.js";
 
 @Entity('auth_department')
 export class AuthDepartment {
@@ -97,5 +98,11 @@ export class AuthDepartment {
         (employee: Employee) => employee.authDepartment,
     )
     employees: Employee[];
+
+    @OneToMany(
+        "InactiveEmployee",
+        (inactiveEmployee: InactiveEmployee) => inactiveEmployee.authDepartment,
+    )
+    inactiveEmployees: InactiveEmployee[];
 
 }

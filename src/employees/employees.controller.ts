@@ -95,4 +95,10 @@ export class EmployeesController {
   getEmployeeLevels(@Param('id') id: string) {
     return this.employeesService.getEmployeeLevels(id);
   }
+
+  @Post('/status/inactiveEmployee/:id')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  inactiveEmployeeById(@Param('id') id: string) {
+    return this.employeesService.inactiveEmployeeById(id);
+  }
 }

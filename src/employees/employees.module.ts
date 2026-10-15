@@ -20,6 +20,6 @@ import { ZkBioaccessService } from './services/zkbioaccess.service.js';
   ],
   controllers: [EmployeesController],
   providers: [EmployeesService, ZkBioaccessService],
-  exports: [TypeOrmModule]
+  exports: [TypeOrmModule, ZkBioaccessService]
 })
 export class EmployeesModule { }
