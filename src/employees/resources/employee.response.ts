@@ -43,4 +43,10 @@ export class EmployeeListResponse implements EmployeeList {
         example: 'Producción',
     })
     department: string;
+
+    @ApiProperty({
+        description: 'Empleado tiene fotografía',
+        example: 'true',
+    })
+    hasPhoto: boolean;
 }

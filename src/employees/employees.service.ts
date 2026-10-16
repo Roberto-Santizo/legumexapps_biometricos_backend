@@ -15,6 +15,7 @@ import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 import { EmailService } from '../common/services/email.service.js';
 import { inactivateEmployeeEmail } from '../common/emails/inactivate-employee.email.js';
+import { FileInterface } from '../common/interfaces/index.js';
 
 @Injectable()
 export class EmployeesService {
@@ -61,6 +62,10 @@ export class EmployeesService {
     if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
 
     return employee;
+  }
+
+  async updateEmployeePhoto(id: string, file: FileInterface){
+    return file;
   }
 
   async getEmployeeLevels(id: string) {

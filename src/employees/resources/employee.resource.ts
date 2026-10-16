@@ -14,7 +14,8 @@ export class EmployeeResource {
             pin: employee.pin,
             createdBy: employee.creater_name,
             updatedBy: employee.updater_name,
-            department: employee.authDepartment.name
+            department: employee.authDepartment.name,
+            hasPhoto: employee.photo_path ? true : false
         };
     }
 }

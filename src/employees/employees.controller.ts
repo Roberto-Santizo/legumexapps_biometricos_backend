@@ -1,5 +1,5 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -17,12 +17,14 @@ import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
 import { EmployeesService } from './employees.service.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
-import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
 import { Employee } from './entities/employee.entity.js';
 import { EmployeeListResponse } from './resources/employee.response.js';
 import { AccLevelEmployeeResponse } from '../acc-level/resources/acc-level.response.js';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { imageFilter } from '../common/helpers/image-filter.js';
+import { type FileInterface } from '../common/interfaces/index.js';
 
 @ApiTags('Empleados')
 @ApiBearerAuth()
@@ -120,5 +122,13 @@ export class EmployeesController {
   })
   inactiveEmployeeById(@Param('id') id: string, @GetUser() user: User) {
     return this.employeesService.inactiveEmployeeById(id, user);
+  }
+
+  @Post('/updateEmployeePhoto/:id')
+  // @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
+  updateEmployeePhoto(@UploadedFile() file: FileInterface, @Param('id') id: string) {
+    if (!file) throw new BadRequestException("Make sure that the file exists and is an image");
+    return this.employeesService.updateEmployeePhoto(id, file);
   }
 }
