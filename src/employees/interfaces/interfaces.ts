@@ -6,6 +6,7 @@ export interface EmployeeList {
     createdBy: string;
     updatedBy: string;
     department: string;
+    departmentCode: string;
     hasPhoto: boolean;
     photoUrl: string;
 }

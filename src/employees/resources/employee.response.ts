@@ -43,6 +43,12 @@ export class EmployeeListResponse implements EmployeeList {
         example: 'Producción',
     })
     department: string;
+   
+    @ApiProperty({
+        description: 'Código del departamento del empleado',
+        example: 'Producción',
+    })
+    departmentCode: string;
 
     @ApiProperty({
         description: 'Indica si el empleado tiene fotografía',
@@ -52,7 +58,7 @@ export class EmployeeListResponse implements EmployeeList {
     
     @ApiProperty({
         description: 'URL de la fotografía del empleado (cadena vacía si no tiene)',
-        example: 'http://localhost:3000/api/employees/photos/10045.png',
+        example: 'http://localhost:3000/api/employees/photos/10045.jpg',
     })
     photoUrl: string;
 }

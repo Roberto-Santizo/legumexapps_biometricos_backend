@@ -37,9 +37,10 @@ export class ZkBioaccessService implements ZkBioaccessDatasource {
         }
     }
 
-    async createOrUpdateEmployee(createEmployeeDto: CreateEmployeeDto): Promise<boolean> {
+    async createOrUpdateEmployee(createEmployeeDto: CreateEmployeeDto, image?: string): Promise<boolean> {
         try {
-            await this.http.post('/person/add', createEmployeeDto);
+            const response: any = await this.http.post('/person/add', { ...createEmployeeDto, personPhoto: image });
+            if (response.code == -63) return false;
             return true;
         } catch (error) {
             console.log(error);

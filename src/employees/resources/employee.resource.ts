@@ -17,6 +17,7 @@ export class EmployeeResource {
             createdBy: employee.creater_name,
             updatedBy: employee.updater_name,
             department: employee.authDepartment.name,
+            departmentCode: employee.authDepartment.code,
             hasPhoto: hasPhoto,
             photoUrl: hasPhoto ? this.getPhotoUrl(employee.pin) : ''
         };

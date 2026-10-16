@@ -27,7 +27,6 @@ import { EmployeeListResponse } from './resources/employee.response.js';
 import { AccLevelEmployeeResponse } from '../acc-level/resources/acc-level.response.js';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { imageFilter } from '../common/helpers/image-filter.js';
-import { FileInterface } from '../common/interfaces/index.js';
 
 @ApiTags('Empleados')
 @ApiBearerAuth()
@@ -41,20 +40,41 @@ export class EmployeesController {
 
   @Post()
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
   @ApiOperation({
     summary: 'Crear o actualizar empleado',
-    description: 'Envía el empleado a la API de ZKBioAccess (/person/add), que lo crea o lo actualiza si el PIN ya existe.',
+    description: 'Envía el empleado junto con su foto (personPhoto) a la API de ZKBioAccess (/person/add), que lo crea o lo actualiza si el PIN ya existe, y guarda la foto en el almacenamiento de fotos como <pin>.jpg.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Datos del empleado e imagen (jpg, jpeg, png o gif)',
+    schema: {
+      type: 'object',
+      required: ['name', 'lastName', 'pin', 'deptCode', 'accLevelIds', 'file'],
+      properties: {
+        name: { type: 'string', minLength: 10, example: 'Juan Carlos' },
+        lastName: { type: 'string', minLength: 5, example: 'Pérez López' },
+        pin: { type: 'string', minLength: 5, example: '10045' },
+        deptCode: { type: 'string', example: 'PROD01' },
+        accLevelIds: { type: 'string', minLength: 10, example: '4028898594b7f9660194b7fb5d7a0430' },
+        accStartTime: { type: 'string', example: '2026-10-15 08:00:00' },
+        accEndTime: { type: 'string', example: '2027-10-15 18:00:00' },
+        file: { type: 'string', format: 'binary' },
+      },
+    },
   })
   @ApiCreatedResponse({
     description: 'Empleado enviado a ZKBioAccess correctamente',
     schema: { type: 'string', example: 'Empleado Creado/Actulizado Correctamente' },
   })
-  @ApiBadRequestResponse({ description: 'Datos inválidos (validación del body o propiedades no permitidas)' })
-  @ApiInternalServerErrorResponse({
-    description: 'Error al comunicarse con ZKBioAccess o al crear/actualizar el empleado ("Please check server logs")',
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos (validación del body o propiedades no permitidas), no se envió archivo o no es una imagen válida ("Make sure that the file exists and is an image"), o ZKBioAccess rechazó la foto porque no se detectó el rostro',
   })
-  create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeesService.create(createEmployeeDto);
+  @ApiInternalServerErrorResponse({
+    description: 'Error al comunicarse con ZKBioAccess o al crear/actualizar el empleado',
+  })
+  create(@UploadedFile() file: any, @Body() createEmployeeDto: CreateEmployeeDto) {
+    return this.employeesService.create(createEmployeeDto, file);
   }
 
   @Get()
@@ -132,7 +152,7 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
   @ApiOperation({
     summary: 'Actualizar foto de empleado',
-    description: 'Envía la foto del empleado a ZKBioAccess (/person/updatePersonnelPhoto) y la guarda en el almacenamiento de fotos como <pin>.png.',
+    description: 'Envía la foto del empleado a ZKBioAccess (/person/updatePersonnelPhoto) y la guarda en el almacenamiento de fotos como <pin>.jpg.',
   })
   @ApiParam({
     name: 'pin',
@@ -172,8 +192,8 @@ export class EmployeesController {
   @ApiParam({
     name: 'key',
     type: String,
-    description: 'Nombre del archivo de la foto (<pin>.png)',
-    example: '10045.png',
+    description: 'Nombre del archivo de la foto (<pin>.jpg)',
+    example: '10045.jpg',
   })
   @ApiProduces('image/png', 'image/jpeg', 'image/gif')
   @ApiOkResponse({

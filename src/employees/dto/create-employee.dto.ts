@@ -43,7 +43,6 @@ export class CreateEmployeeDto {
         example: '4028898594b7f9660194b7fb5d7a0430',
     })
     @IsString()
-    @MinLength(10)
     accLevelIds: string;
 
     @ApiPropertyOptional({

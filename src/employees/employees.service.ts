@@ -39,14 +39,13 @@ export class EmployeesService {
     private readonly photos: StorageDisk,
   ) { }
 
-  async create(createEmployeeDto: CreateEmployeeDto) {
-    try {
-      await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto);
+  async create(createEmployeeDto: CreateEmployeeDto, file: any) {
+    const base64 = file ? imageToBase64(file) : undefined;
+    const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, base64);
+    if (!flag && file) throw new BadRequestException("Hubo un error al guardar la foto del empleado, asegurese que el rostro aparezca dentro de la misma");
+    if (file) await this.photos.put(`${createEmployeeDto.pin}.jpg`, file.buffer, { contentType: file.mimetype });
 
-      return 'Empleado Creado/Actulizado Correctamente';
-    } catch (error) {
-      this.databaseHelpers.handleExeptions(error);
-    }
+    return 'Empleado Creado/Actulizado Correctamente';
   }
 
   async findAll(employeesQueryDto: EmployeesQueryDto) {
