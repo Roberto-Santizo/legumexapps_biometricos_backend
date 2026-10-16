@@ -18,7 +18,6 @@ import { Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 import type { Request, Response } from 'express';
-import { FileInterface } from '../common/interfaces/index.js';
 
 @Injectable()
 export class EmployeesService {
