@@ -1,18 +1,25 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { AccLevelModule } from './acc-level/acc-level.module.js';
+import { AuthDepartmentModule } from './auth-department/auth-department.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CommonModule } from './common/common.module.js';
-import { UsersModule } from './users/users.module.js';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { createStorageOptions } from './common/config/storage.config.js';
 import { EmployeesModule } from './employees/employees.module.js';
-import { MSSQL_CONNECTION } from './common/constants/connections.js';
-import { AuthDepartmentModule } from './auth-department/auth-department.module.js';
-import { AccLevelModule } from './acc-level/acc-level.module.js';
 import { InactiveEmployeesModule } from './inactive-employees/inactive-employees.module.js';
+import { Module } from '@nestjs/common';
+import { MSSQL_CONNECTION } from './common/constants/connections.js';
+import { StorageModule } from '@nestjs/storage';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from './users/users.module.js';
+import storage from './common/config/storage.js';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true, load: [storage] }),
+    StorageModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: createStorageOptions
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,

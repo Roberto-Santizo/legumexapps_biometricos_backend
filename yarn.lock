@@ -555,6 +555,11 @@
     jsonc-parser "3.3.1"
     pluralize "8.0.0"
 
+"@nestjs/storage@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@nestjs/storage/-/storage-0.0.3.tgz#14acb8d9ab56d4f326d53d9dd74321ce3d6ece98"
+  integrity sha512-ATS6ZAdyn1VdqGCfneJk48KhEoWt1Wq0V9CHxNMkp2k4Jx91HruH2clV2qOlaCVK9fnPkttzMzKY294q8PiV4A==
+
 "@nestjs/swagger@^12.0.2":
   version "12.0.2"
   resolved "https://registry.yarnpkg.com/@nestjs/swagger/-/swagger-12.0.2.tgz#de2c04c9d30ad3fee6ffef565c7536180b8db7d4"

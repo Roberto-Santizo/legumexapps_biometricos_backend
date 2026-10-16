@@ -7,4 +7,5 @@ export interface EmployeeList {
     updatedBy: string;
     department: string;
     hasPhoto: boolean;
+    photoUrl: string;
 }

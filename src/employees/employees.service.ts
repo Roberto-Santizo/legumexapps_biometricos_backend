@@ -1,20 +1,23 @@
 import { AccLevelEmployee } from '../acc-level/entities/acc_level_employee.js';
 import { AccLevelEmployeeResource } from '../acc-level/resources/acc_level_employee.resource.js';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { DateHandlerService } from '../common/services/date-handler.service.js';
+import { EmailService } from '../common/services/email.service.js';
 import { Employee } from './entities/employee.entity.js';
 import { EmployeeResource } from './resources/employee.resource.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
 import { Filters } from '../common/providers/filters.js';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { imageToBase64 } from '../common/helpers/base-64-enconder.js';
+import { inactivateEmployeeEmail } from '../common/emails/inactivate-employee.email.js';
+import { InjectDisk, serveFile, StorageDisk } from '@nestjs/storage';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
-import { EmailService } from '../common/services/email.service.js';
-import { inactivateEmployeeEmail } from '../common/emails/inactivate-employee.email.js';
+import type { Request, Response } from 'express';
 import { FileInterface } from '../common/interfaces/index.js';
 
 @Injectable()
@@ -30,10 +33,13 @@ export class EmployeesService {
     private readonly databaseHelpers: DatabaseHelpers,
     private readonly dateHandler: DateHandlerService,
     private readonly zkBioaccessService: ZkBioaccessService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+
+    @InjectDisk('photos')
+    private readonly photos: StorageDisk,
   ) { }
 
-  async create(createEmployeeDto: CreateEmployeeDto, user: User) {
+  async create(createEmployeeDto: CreateEmployeeDto) {
     try {
       await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto);
 
@@ -61,11 +67,28 @@ export class EmployeesService {
 
     if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
 
+    return EmployeeResource.employeeList(employee);
+  }
+
+  async findOneByPin(pin: string) {
+    const employee = await this.employeeRepository.findOneBy({ pin });
+    if (!employee) throw new NotFoundException(`El usuario con POSICIÓN ${pin} no existe`);
     return employee;
   }
 
-  async updateEmployeePhoto(id: string, file: FileInterface){
-    return file;
+  async updateEmployeePhoto(pin: string, file: any) {
+    await this.findOneByPin(pin);
+    const base64 = imageToBase64(file);
+    const flag = await this.zkBioaccessService.updateEmployeePhoto(pin, base64);
+
+    if (!flag) throw new BadRequestException("Hubo un error al actualizar la foto del empleado, asegurese que el rostro aparezca dentro de la misma");
+    await this.photos.put(`${pin}.jpg`, file.buffer, { contentType: file.mimetype });
+
+    return 'Foto actualizada correctamente';
+  }
+
+  servePhoto(key: string, req: Request, res: Response) {
+    return serveFile(this.photos, key, { req, res, disposition: 'inline' });
   }
 
   async getEmployeeLevels(id: string) {
@@ -84,7 +107,7 @@ export class EmployeesService {
         name: employee.name,
         leave_date: this.dateHandler.getCurrentDate(),
         created_at: this.dateHandler.getCurrentDate(),
-        department: employee.authDepartment.name,
+        department: employee.department,
         updater_name: user.name,
         updater_username: user.email
       }))

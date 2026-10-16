@@ -45,8 +45,14 @@ export class EmployeeListResponse implements EmployeeList {
     department: string;
 
     @ApiProperty({
-        description: 'Empleado tiene fotografía',
-        example: 'true',
+        description: 'Indica si el empleado tiene fotografía',
+        example: true,
     })
     hasPhoto: boolean;
+    
+    @ApiProperty({
+        description: 'URL de la fotografía del empleado (cadena vacía si no tiene)',
+        example: 'http://localhost:3000/api/employees/photos/10045.png',
+    })
+    photoUrl: string;
 }

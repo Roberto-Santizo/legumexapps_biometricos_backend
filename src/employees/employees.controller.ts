@@ -1,17 +1,21 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseInterceptors, UploadedFile, BadRequestException, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import {
-  ApiBadRequestResponse,
-  ApiBearerAuth,
-  ApiCreatedResponse,
-  ApiForbiddenResponse,
-  ApiInternalServerErrorResponse,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-  ApiUnauthorizedResponse,
+    ApiBadRequestResponse,
+    ApiBearerAuth,
+    ApiBody,
+    ApiConsumes,
+    ApiCreatedResponse,
+    ApiForbiddenResponse,
+    ApiInternalServerErrorResponse,
+    ApiNotFoundResponse,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiProduces,
+    ApiTags,
+    ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
@@ -19,12 +23,11 @@ import { EmployeesService } from './employees.service.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
-import { Employee } from './entities/employee.entity.js';
 import { EmployeeListResponse } from './resources/employee.response.js';
 import { AccLevelEmployeeResponse } from '../acc-level/resources/acc-level.response.js';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { imageFilter } from '../common/helpers/image-filter.js';
-import { type FileInterface } from '../common/interfaces/index.js';
+import { FileInterface } from '../common/interfaces/index.js';
 
 @ApiTags('Empleados')
 @ApiBearerAuth()
@@ -50,8 +53,8 @@ export class EmployeesController {
   @ApiInternalServerErrorResponse({
     description: 'Error al comunicarse con ZKBioAccess o al crear/actualizar el empleado ("Please check server logs")',
   })
-  create(@Body() createEmployeeDto: CreateEmployeeDto, @GetUser() user: User) {
-    return this.employeesService.create(createEmployeeDto, user);
+  create(@Body() createEmployeeDto: CreateEmployeeDto) {
+    return this.employeesService.create(createEmployeeDto);
   }
 
   @Get()
@@ -78,7 +81,7 @@ export class EmployeesController {
     description: 'ID del empleado (32 caracteres)',
     example: '4028898594b7f9660194b7fb5d7a0500',
   })
-  @ApiOkResponse({ description: 'Empleado encontrado', type: Employee })
+  @ApiOkResponse({ description: 'Empleado encontrado', type: EmployeeListResponse })
   @ApiNotFoundResponse({ description: 'El usuario con ID <id> no existe' })
   findOne(@Param('id') id: string) {
     return this.employeesService.findOne(id);
@@ -124,11 +127,61 @@ export class EmployeesController {
     return this.employeesService.inactiveEmployeeById(id, user);
   }
 
-  @Post('/updateEmployeePhoto/:id')
-  // @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @Post('/updateEmployeePhoto/:pin')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
-  updateEmployeePhoto(@UploadedFile() file: FileInterface, @Param('id') id: string) {
+  @ApiOperation({
+    summary: 'Actualizar foto de empleado',
+    description: 'Envía la foto del empleado a ZKBioAccess (/person/updatePersonnelPhoto) y la guarda en el almacenamiento de fotos como <pin>.png.',
+  })
+  @ApiParam({
+    name: 'pin',
+    type: String,
+    description: 'PIN (código) del empleado en ZKBioAccess',
+    example: '10045',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Imagen del empleado (jpg, jpeg, png o gif)',
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiCreatedResponse({
+    description: 'Foto actualizada correctamente',
+    schema: { type: 'string', example: 'Foto actualizada correctamente' },
+  })
+  @ApiBadRequestResponse({
+    description: 'No se envió archivo o no es una imagen válida ("Make sure that the file exists and is an image"), o ZKBioAccess rechazó la foto porque no se detectó el rostro',
+  })
+  @ApiNotFoundResponse({ description: 'El usuario con POSICIÓN <pin> no existe' })
+  updateEmployeePhoto(@UploadedFile() file: any, @Param('pin') id: string) {
     if (!file) throw new BadRequestException("Make sure that the file exists and is an image");
     return this.employeesService.updateEmployeePhoto(id, file);
+  }
+
+  @Get('photos/:key')
+  @ApiOperation({
+    summary: 'Ver foto de empleado',
+    description: 'Devuelve la imagen guardada en el almacenamiento de fotos bajo la key indicada (inline, cache privada de 24 h), para mostrarla en el navegador.',
+  })
+  @ApiParam({
+    name: 'key',
+    type: String,
+    description: 'Nombre del archivo de la foto (<pin>.png)',
+    example: '10045.png',
+  })
+  @ApiProduces('image/png', 'image/jpeg', 'image/gif')
+  @ApiOkResponse({
+    description: 'La imagen del empleado',
+    schema: { type: 'string', format: 'binary' },
+  })
+  @ApiNotFoundResponse({ description: 'No existe una foto con esa key' })
+  getEmployeePhoto(@Param('key') key: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.employeesService.servePhoto(key, req, res);
   }
 }
