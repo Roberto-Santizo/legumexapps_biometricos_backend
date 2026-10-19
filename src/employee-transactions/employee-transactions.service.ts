@@ -1,13 +1,13 @@
-import { DateHandlerService } from '../common/services/date-handler.service.js';
 import { EmployeeTransaction } from './entities/employee-transaction.entity.js';
 import { EmployeeTransactionQueryDto } from './dto/employee-transaction-query.dto.js';
-import { EmployeeTransactionsResource } from './resources/employee-transactions.resource.js';
 import { Filters } from '../common/providers/filters.js';
-import { paginate } from '../common/helpers/paginate.js';
-import { Inject, Injectable } from '@nestjs/common';
+import { GenerateTransactionsReportDto } from './dto/generate-transactions-report.dto.js';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
+import { paginate } from '../common/helpers/paginate.js';
 import { Repository } from 'typeorm';
+import { ExcelService } from '../common/services/excel.service.js';
 
 @Injectable()
 export class EmployeeTransactionsService {
@@ -16,7 +16,7 @@ export class EmployeeTransactionsService {
     private readonly employeeTransactionRepository: Repository<EmployeeTransaction>,
 
     @Inject()
-    private readonly dateHandler: DateHandlerService,
+    private readonly excelService: ExcelService,
 
     private readonly filters: Filters
   ) { }
@@ -33,8 +33,39 @@ export class EmployeeTransactionsService {
       where
     });
 
-    const resource = new EmployeeTransactionsResource(this.dateHandler);
+    return paginate(transactions, total, limit, offset);
+  }
 
-    return paginate(resource.collection(transactions), total, limit, offset);
+  async getTransactionsReport(generateTransactionsDto: GenerateTransactionsReportDto) {
+    const { start_date, end_date } = generateTransactionsDto;
+    this.validateDates(start_date, end_date);
+
+    end_date.setUTCDate(end_date.getUTCDate() + 1);
+
+    const transactions = await this.employeeTransactionRepository
+      .createQueryBuilder('transaction')
+      .where('transaction.event_time >= :start_date', {
+        start_date,
+      })
+      .andWhere('transaction.event_time < :end_date', {
+        end_date,
+      })
+      .getMany();
+
+    return this.excelService.generateTransactionsExcel(transactions);
+  }
+
+  private validateDates(startDate: Date, endDate: Date) {
+
+    const differenceInMilliseconds =
+      endDate.getTime() - startDate.getTime();
+
+    const oneWeekInMilliseconds = 7 * 24 * 60 * 60 * 1000;
+
+    if (differenceInMilliseconds > oneWeekInMilliseconds) {
+      throw new BadRequestException(
+        'El rango de fechas no puede ser mayor a una semana',
+      );
+    }
   }
 }
