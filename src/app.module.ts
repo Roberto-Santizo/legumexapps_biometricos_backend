@@ -12,6 +12,7 @@ import { StorageModule } from '@nestjs/storage';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
+import { EmployeeTransactionsModule } from './employee-transactions/employee-transactions.module.js';
 import storage from './common/config/storage.js';
 
 @Module({
@@ -54,6 +55,7 @@ import storage from './common/config/storage.js';
     AccLevelModule,
     InactiveEmployeesModule,
     TasksModule,
+    EmployeeTransactionsModule,
   ],
 })
 export class AppModule { }
