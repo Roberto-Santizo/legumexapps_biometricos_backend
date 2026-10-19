@@ -33,8 +33,6 @@ export class ExcelService {
             horizontal: 'center',
         };
 
-        worksheet.getColumn('event_time').numFmt = 'dd/mm/yyyy';
-
         return Buffer.from(await workbook.xlsx.writeBuffer());
     }
 }
