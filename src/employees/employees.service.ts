@@ -9,6 +9,7 @@ import { Employee } from './entities/employee.entity.js';
 import { EmployeeResource } from './resources/employee.resource.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
 import { Filters } from '../common/providers/filters.js';
+import { paginate } from '../common/helpers/paginate.js';
 import { imageToBase64 } from '../common/helpers/base-64-enconder.js';
 import { inactivateEmployeeEmail } from '../common/emails/inactivate-employee.email.js';
 import { InjectDisk, serveFile, StorageDisk } from '@nestjs/storage';
@@ -51,13 +52,13 @@ export class EmployeesService {
     const { limit = 10, offset = 0 } = employeesQueryDto;
     const where = this.filters.buildWhere<Employee, EmployeesQueryDto>(employeesQueryDto, { like: ['name'] });
 
-    const employees = await this.employeeRepository.find({
+    const [employees, total] = await this.employeeRepository.findAndCount({
       take: limit,
       skip: offset,
       where,
     });
 
-    return EmployeeResource.collection(employees);
+    return paginate(EmployeeResource.collection(employees), total, limit, offset);
   }
 
   async findOne(id: string) {

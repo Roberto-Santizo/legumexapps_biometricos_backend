@@ -8,6 +8,7 @@ import { ZkBioaccessService } from '../employees/services/zkbioaccess.service.js
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { InactiveEmployeesQueryDto } from './dto/inactive-employees-query.dto.js';
 import { Filters } from '../common/providers/filters.js';
+import { paginate } from '../common/helpers/paginate.js';
 
 @Injectable()
 export class InactiveEmployeesService {
@@ -25,12 +26,12 @@ export class InactiveEmployeesService {
     const { limit = 10, offset = 0 } = inactiveEmployeesQueryDto;
     const where = this.filters.buildWhere<InactiveEmployee, InactiveEmployeesQueryDto>(inactiveEmployeesQueryDto, { like: ['name'] });
 
-    const inactiveEmployees = await this.inactiveEmployeeRepository.find({
+    const [inactiveEmployees, total] = await this.inactiveEmployeeRepository.findAndCount({
       take: limit,
       skip: offset,
       where
     });
-    return InactiveEmployeeResource.inactiveEmployeeCollection(inactiveEmployees);
+    return paginate(InactiveEmployeeResource.inactiveEmployeeCollection(inactiveEmployees), total, limit, offset);
   }
 
   async findOne(id: string) {

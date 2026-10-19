@@ -12,6 +12,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { AuthDepartmentService } from './auth-department.service.js';
 import { CreateAuthDepartmentDto } from './dto/create-auth-department.dto.js';
 import { UpdateAuthDepartmentDto } from './dto/update-auth-department.dto.js';
@@ -51,9 +52,9 @@ export class AuthDepartmentController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Listar departamentos',
-    description: 'Devuelve los departamentos paginados, con filtros opcionales por nombre y código (búsqueda parcial).',
+    description: 'Devuelve los departamentos paginados, con filtros opcionales por nombre y código (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
   })
-  @ApiOkResponse({ description: 'Listado de departamentos', type: [AuthDepartment] })
+  @ApiPaginatedResponse(AuthDepartment, 'Listado paginado de departamentos')
   @ApiBadRequestResponse({ description: 'Parámetros de consulta inválidos o no permitidos' })
   findAll(@Query() authDepartmentQueryDto: AuthDepartmentQueryDto) {
     return this.authDepartmentService.findAll(authDepartmentQueryDto);

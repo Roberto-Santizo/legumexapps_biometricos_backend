@@ -9,6 +9,7 @@ import { CreateAccLevelDto } from './dto/create-acc-level.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { DateHandlerService } from '../common/services/date-handler.service.js';
 import { Filters } from '../common/providers/filters.js';
+import { paginate } from '../common/helpers/paginate.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -57,12 +58,12 @@ export class AccLevelService {
     const { limit = 10, offset = 0 } = accLevelQueryDto;
     const where = this.filters.buildWhere<AccLevel, AccLevelQueryDto>(accLevelQueryDto, { like: ['name'] });
 
-    const levels = await this.accLevelRepository.find({
+    const [levels, total] = await this.accLevelRepository.findAndCount({
       take: limit,
       skip: offset,
       where
     });
-    return levels;
+    return paginate(levels, total, limit, offset);
   }
 
   async findOne(id: string) {

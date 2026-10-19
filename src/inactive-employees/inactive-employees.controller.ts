@@ -12,6 +12,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { InactiveEmployeesService } from './inactive-employees.service.js';
 import { InactiveEmployeeDetailResponse, InactiveEmployeeResponse } from './resources/inactive-employee.response.js';
 import { InactiveEmployeesQueryDto } from './dto/inactive-employees-query.dto.js';
@@ -31,9 +32,9 @@ export class InactiveEmployeesController {
   @Get()
   @ApiOperation({
     summary: 'Listar empleados inactivos',
-    description: 'Devuelve los empleados dados de baja en ZKBioAccess paginados, con filtro opcional por nombre (búsqueda parcial) y el nombre de su departamento.',
+    description: 'Devuelve los empleados dados de baja en ZKBioAccess paginados, con filtro opcional por nombre (búsqueda parcial) y el nombre de su departamento. La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
   })
-  @ApiOkResponse({ description: 'Listado de empleados inactivos', type: [InactiveEmployeeResponse] })
+  @ApiPaginatedResponse(InactiveEmployeeResponse, 'Listado paginado de empleados inactivos')
   @ApiBadRequestResponse({ description: 'Parámetros de consulta inválidos o no permitidos' })
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   findAll(@Query() inactiveEmployeesQueryDto: InactiveEmployeesQueryDto) {

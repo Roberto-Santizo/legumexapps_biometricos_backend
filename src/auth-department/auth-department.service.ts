@@ -4,6 +4,7 @@ import { CreateAuthDepartmentDto } from './dto/create-auth-department.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { DateHandlerService } from '../common/services/date-handler.service.js';
 import { Filters } from '../common/providers/filters.js';
+import { paginate } from '../common/helpers/paginate.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -49,13 +50,13 @@ export class AuthDepartmentService {
     const { limit = 10, offset = 0 } = authDepartmentQueryDto;
     const where = this.filters.buildWhere<AuthDepartment, AuthDepartmentQueryDto>(authDepartmentQueryDto, { like: ['code', 'name'] });
 
-    const departments = await this.authDepartmentRepository.find({
+    const [departments, total] = await this.authDepartmentRepository.findAndCount({
       take: limit,
       skip: offset,
       where
     });
 
-    return departments;
+    return paginate(departments, total, limit, offset);
   }
 
   async findOne(id: string) {

@@ -3,6 +3,7 @@ import { EmployeeTransaction } from './entities/employee-transaction.entity.js';
 import { EmployeeTransactionQueryDto } from './dto/employee-transaction-query.dto.js';
 import { EmployeeTransactionsResource } from './resources/employee-transactions.resource.js';
 import { Filters } from '../common/providers/filters.js';
+import { paginate } from '../common/helpers/paginate.js';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
@@ -26,7 +27,7 @@ export class EmployeeTransactionsService {
     const where = this.filters.buildWhere<EmployeeTransaction, EmployeeTransactionQueryDto>(employeeTransactionQueryDto,
       { like: ['pin', 'name', 'last_name', 'dept_code', 'dept_name'], date: ['event_time'] });
 
-    const transactions = await this.employeeTransactionRepository.find({
+    const [transactions, total] = await this.employeeTransactionRepository.findAndCount({
       take: limit,
       skip: offset,
       where
@@ -34,6 +35,6 @@ export class EmployeeTransactionsService {
 
     const resource = new EmployeeTransactionsResource(this.dateHandler);
 
-    return resource.collection(transactions);
+    return paginate(resource.collection(transactions), total, limit, offset);
   }
 }
