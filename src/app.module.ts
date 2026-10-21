@@ -15,6 +15,7 @@ import { TasksModule } from './tasks/tasks.module.js';
 import { EmployeeTransactionsModule } from './employee-transactions/employee-transactions.module.js';
 import storage from './common/config/storage.js';
 import { ScheduleModule } from '@nestjs/schedule';
+import { PhotosModule } from './photos/photos.module.js';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     InactiveEmployeesModule,
     TasksModule,
     EmployeeTransactionsModule,
+    PhotosModule,
   ],
 })
 export class AppModule { }
