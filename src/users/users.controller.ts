@@ -11,6 +11,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { UsersService } from './users.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { Auth } from '../auth/decorators/auth.decorator.js';
@@ -32,9 +33,9 @@ export class UsersController {
   @Auth(ValidRoles.admin)
   @ApiOperation({
     summary: 'Listar usuarios',
-    description: 'Devuelve los usuarios paginados, con filtros opcionales por nombre y correo (búsqueda parcial).',
+    description: 'Devuelve los usuarios paginados, con filtros opcionales por nombre y correo (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
   })
-  @ApiOkResponse({ description: 'Listado de usuarios', type: [User] })
+  @ApiPaginatedResponse(User, 'Listado paginado de usuarios')
   @ApiBadRequestResponse({ description: 'Parámetros de consulta inválidos o no permitidos' })
   findAll(@Query() usersQueryDto: UsersQueryDto) {
     return this.usersService.findAll(usersQueryDto);

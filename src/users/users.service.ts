@@ -1,5 +1,6 @@
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { Filters } from '../common/providers/filters.js';
+import { paginate } from '../common/helpers/paginate.js';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -22,13 +23,13 @@ export class UsersService {
     const { limit = 10, offset = 0 } = usersQueryDto;
     const where = this.filters.buildWhere<User, UsersQueryDto>(usersQueryDto, { like: ['name', 'email'] });
 
-    const users = await this.userRepository.find({
+    const [users, total] = await this.userRepository.findAndCount({
       where,
       take: limit,
       skip: offset,
     });
 
-    return UserResource.userCollection(users);
+    return paginate(UserResource.userCollection(users), total, limit, offset);
   }
 
   async findOne(id: string) {

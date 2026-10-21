@@ -11,11 +11,15 @@ import { MSSQL_CONNECTION } from './common/constants/connections.js';
 import { StorageModule } from '@nestjs/storage';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module.js';
+import { TasksModule } from './tasks/tasks.module.js';
+import { EmployeeTransactionsModule } from './employee-transactions/employee-transactions.module.js';
 import storage from './common/config/storage.js';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [storage] }),
+    ScheduleModule.forRoot(),
     StorageModule.forRootAsync({
       inject: [ConfigService],
       useFactory: createStorageOptions
@@ -52,6 +56,8 @@ import storage from './common/config/storage.js';
     AuthDepartmentModule,
     AccLevelModule,
     InactiveEmployeesModule,
+    TasksModule,
+    EmployeeTransactionsModule,
   ],
 })
 export class AppModule { }

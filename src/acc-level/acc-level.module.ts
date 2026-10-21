@@ -15,6 +15,6 @@ import { AccLevelEmployee } from './entities/acc_level_employee.js';
   controllers: [AccLevelController],
   providers: [AccLevelService],
   imports: [TypeOrmModule.forFeature([AccLevel, AccDoor, AccDevice, AccLevelDoor, AccLevelEmployee], MSSQL_CONNECTION), CommonModule, AuthModule],
-  exports: [TypeOrmModule]
+  exports: [TypeOrmModule, AccLevelService]
 })
 export class AccLevelModule { }

@@ -12,6 +12,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { AccLevelService } from './acc-level.service.js';
 import { CreateAccLevelDto } from './dto/create-acc-level.dto.js';
 import { UpdateAccLevelDto } from './dto/update-acc-level.dto.js';
@@ -52,9 +53,9 @@ export class AccLevelController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Listar niveles de acceso',
-    description: 'Devuelve los niveles de acceso paginados, con filtro opcional por nombre (búsqueda parcial).',
+    description: 'Devuelve los niveles de acceso paginados, con filtro opcional por nombre (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
   })
-  @ApiOkResponse({ description: 'Listado de niveles de acceso', type: [AccLevel] })
+  @ApiPaginatedResponse(AccLevel, 'Listado paginado de niveles de acceso')
   @ApiBadRequestResponse({ description: 'Parámetros de consulta inválidos o no permitidos' })
   findAll(@Query() accLevelQueryDto: AccLevelQueryDto) {
     return this.accLevelService.findAll(accLevelQueryDto);

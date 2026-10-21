@@ -17,6 +17,7 @@ import {
     ApiTags,
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
 import { EmployeesService } from './employees.service.js';
@@ -81,9 +82,9 @@ export class EmployeesController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Listar empleados',
-    description: 'Devuelve los empleados paginados, con filtro opcional por nombre (búsqueda parcial).',
+    description: 'Devuelve los empleados paginados, con filtro opcional por nombre (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
   })
-  @ApiOkResponse({ description: 'Listado de empleados', type: [EmployeeListResponse] })
+  @ApiPaginatedResponse(EmployeeListResponse, 'Listado paginado de empleados')
   @ApiBadRequestResponse({ description: 'Parámetros de consulta inválidos o no permitidos' })
   findAll(@Query() employeesQueryDto: EmployeesQueryDto) {
     return this.employeesService.findAll(employeesQueryDto);

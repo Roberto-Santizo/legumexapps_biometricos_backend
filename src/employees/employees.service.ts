@@ -1,6 +1,6 @@
 import { AccLevelEmployee } from '../acc-level/entities/acc_level_employee.js';
 import { AccLevelEmployeeResource } from '../acc-level/resources/acc_level_employee.resource.js';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { DateHandlerService } from '../common/services/date-handler.service.js';
@@ -9,6 +9,7 @@ import { Employee } from './entities/employee.entity.js';
 import { EmployeeResource } from './resources/employee.resource.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
 import { Filters } from '../common/providers/filters.js';
+import { paginate } from '../common/helpers/paginate.js';
 import { imageToBase64 } from '../common/helpers/base-64-enconder.js';
 import { inactivateEmployeeEmail } from '../common/emails/inactivate-employee.email.js';
 import { InjectDisk, serveFile, StorageDisk } from '@nestjs/storage';
@@ -18,7 +19,6 @@ import { Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 import type { Request, Response } from 'express';
-import { FileInterface } from '../common/interfaces/index.js';
 
 @Injectable()
 export class EmployeesService {
@@ -40,25 +40,36 @@ export class EmployeesService {
   ) { }
 
   async create(createEmployeeDto: CreateEmployeeDto, file: any) {
-    const base64 = file ? imageToBase64(file) : undefined;
-    const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, base64);
-    if (!flag && file) throw new BadRequestException("Hubo un error al guardar la foto del empleado, asegurese que el rostro aparezca dentro de la misma");
-    if (file) await this.photos.put(`${createEmployeeDto.pin}.jpg`, file.buffer, { contentType: file.mimetype });
+    try {
+      const base64 = file ? imageToBase64(file) : undefined;
+      const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, base64);
+      if (!flag && file) throw new BadRequestException("Hubo un error al guardar la foto del empleado, asegurese que el rostro aparezca dentro de la misma");
+      if (file) await this.photos.put(`${createEmployeeDto.pin}.jpg`, file.buffer, { contentType: file.mimetype });
+      return 'Empleado Creado/Actulizado Correctamente';
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.log(error);
+      throw new InternalServerErrorException('Hubo un error');
+    }
 
-    return 'Empleado Creado/Actulizado Correctamente';
   }
 
   async findAll(employeesQueryDto: EmployeesQueryDto) {
     const { limit = 10, offset = 0 } = employeesQueryDto;
     const where = this.filters.buildWhere<Employee, EmployeesQueryDto>(employeesQueryDto, { like: ['name'] });
 
-    const employees = await this.employeeRepository.find({
+    const [employees, total] = await this.employeeRepository.findAndCount({
       take: limit,
       skip: offset,
       where,
     });
 
-    return EmployeeResource.collection(employees);
+    return paginate(EmployeeResource.collection(employees), total, limit, offset);
+  }
+
+  async getAll() {
+    const employees = await this.employeeRepository.find();
+    return employees;
   }
 
   async findOne(id: string) {
@@ -71,7 +82,7 @@ export class EmployeesService {
 
   async findOneByPin(pin: string) {
     const employee = await this.employeeRepository.findOneBy({ pin });
-    if (!employee) throw new NotFoundException(`El usuario con POSICIÓN ${pin} no existe`);
+    if (!employee) throw new NotFoundException(`El usuario con código ${pin} no existe`);
     return employee;
   }
 
