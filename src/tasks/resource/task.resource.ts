@@ -19,7 +19,7 @@ export class TaskResource {
             payload: task.payload,
             previous: task.previous,
             pin: task.pin,
-            scheduled_at: this.dateHandle.formatDate(task.scheduled_at),
+            scheduled_at: task.scheduled_at.toString(),
         }
     }
 }
