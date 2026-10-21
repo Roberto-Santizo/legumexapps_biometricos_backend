@@ -21,6 +21,6 @@ import { ConfigModule } from '@nestjs/config';
   ],
   controllers: [EmployeesController],
   providers: [EmployeesService, ZkBioaccessService],
-  exports: [TypeOrmModule, ZkBioaccessService]
+  exports: [TypeOrmModule, ZkBioaccessService, EmployeesService]
 })
 export class EmployeesModule { }

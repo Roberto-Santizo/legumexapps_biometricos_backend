@@ -59,6 +59,12 @@ export class AuthDepartmentService {
     return paginate(departments, total, limit, offset);
   }
 
+  async getAll(){
+    const departments = await this.authDepartmentRepository.find();
+
+    return departments;
+  }
+
   async findOne(id: string) {
     const authDepartment = await this.authDepartmentRepository.findOneBy({ id });
     if (!authDepartment) throw new NotFoundException(`El departamento con ID ${id} no existe`);

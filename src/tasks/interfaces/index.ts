@@ -1,7 +1,5 @@
-import { TaskTypeEnum } from "../entities/task.entity.js";
-
-interface CreationPayload {
-    type: TaskTypeEnum.creation;
+export interface CreationPayload {
+    pin: string;
     name: string;
     lastName: string;
     deptCode: string;
@@ -10,16 +8,28 @@ interface CreationPayload {
     accEndTime?: string;
 }
 
-interface MovementPayload {
-    type: TaskTypeEnum.movement;
-    lastName?: string;
-    deptCode?: string;
+export interface MovementPayload {
+    pin: string;
+    position: string;
+    deptCode: string;
+    accLevelIds: string;
 }
 
-interface InactivatePayload {
-    type: TaskTypeEnum.inactivate;
+export interface InactivatePayload {
+    pin: string;
     leaveType: number;
     leaveDate: string;
+}
+
+export interface TaskResourceInterface {
+    id: string;
+    type: string;
+    status: string;
+    pin: string;
+    payload: TaskPayload;
+    previous: Record<string, unknown> | null;
+    scheduled_at: string;
+    created_by: string;
 }
 
 export type TaskPayload = CreationPayload | MovementPayload | InactivatePayload;

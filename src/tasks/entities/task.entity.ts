@@ -20,7 +20,7 @@ export class Task {
     @Column('int', { default: 0 }) attempts: number;
     @Column('text', { nullable: true }) last_error: string | null;
     @Column('uuid') batch_id: string;
-    @Column('int') source_file: number;
+    @Column('text') source_file: string;
     @Column('text') source_row: string;
 
 

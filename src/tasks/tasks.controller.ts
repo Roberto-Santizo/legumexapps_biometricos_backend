@@ -1,7 +1,8 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Param, Delete, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, Query, ParseUUIDPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
+import { TaskQueryDto } from './dto/task-query.dto.js';
 import { TasksService } from './tasks.service.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
@@ -20,12 +21,20 @@ export class TasksController {
   }
 
   @Get()
-  findAll() {
-    return this.tasksService.findAll();
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  findAll(@Query() taskQueryDto: TaskQueryDto) {
+    return this.tasksService.findAll(taskQueryDto);
   }
 
+  @Get(':id')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tasksService.findOne(id);
+  }
+
+
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tasksService.remove(id);
   }
 }

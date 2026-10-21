@@ -61,6 +61,11 @@ export class EmployeesService {
     return paginate(EmployeeResource.collection(employees), total, limit, offset);
   }
 
+  async getAll(){
+    const employees = await this.employeeRepository.find();
+    return employees;
+  }
+
   async findOne(id: string) {
     const employee = await this.employeeRepository.findOneBy({ id });
 
@@ -71,7 +76,7 @@ export class EmployeesService {
 
   async findOneByPin(pin: string) {
     const employee = await this.employeeRepository.findOneBy({ pin });
-    if (!employee) throw new NotFoundException(`El usuario con POSICIÓN ${pin} no existe`);
+    if (!employee) throw new NotFoundException(`El usuario con código ${pin} no existe`);
     return employee;
   }
 

@@ -66,6 +66,11 @@ export class AccLevelService {
     return paginate(levels, total, limit, offset);
   }
 
+  async getAll(){
+    const accLevels = await this.accLevelRepository.find();
+    return accLevels;
+  }
+
   async findOne(id: string) {
     const level = await this.accLevelRepository.findOne({ where: { id } });
     if (!level) throw new NotFoundException(`El nivel con ID ${id} no existe`);
