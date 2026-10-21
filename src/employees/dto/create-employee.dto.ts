@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsDate, IsOptional, IsString, MinLength } from "class-validator";
+import { IsOptional, IsString, MinLength } from "class-validator";
 
 export class CreateEmployeeDto {
 
@@ -49,15 +49,13 @@ export class CreateEmployeeDto {
         description: 'Fecha y hora de inicio de vigencia del acceso',
         example: '2026-10-15 08:00:00',
     })
-    @IsString()
     @IsOptional()
-    accStartTime: string;
+    accStartTime?: string;
 
     @ApiPropertyOptional({
         description: 'Fecha y hora de fin de vigencia del acceso',
         example: '2027-10-15 18:00:00',
     })
-    @IsString()
     @IsOptional()
-    accEndTime: string;
+    accEndTime?: string;
 }

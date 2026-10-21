@@ -14,10 +14,12 @@ import { UsersModule } from './users/users.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
 import { EmployeeTransactionsModule } from './employee-transactions/employee-transactions.module.js';
 import storage from './common/config/storage.js';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [storage] }),
+    ScheduleModule.forRoot(),
     StorageModule.forRootAsync({
       inject: [ConfigService],
       useFactory: createStorageOptions

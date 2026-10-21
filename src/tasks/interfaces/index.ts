@@ -10,6 +10,8 @@ export interface CreationPayload {
 
 export interface MovementPayload {
     pin: string;
+    name: string;
+    lastName: string;
     position: string;
     deptCode: string;
     accLevelIds: string;

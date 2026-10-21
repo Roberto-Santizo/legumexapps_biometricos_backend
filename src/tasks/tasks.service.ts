@@ -155,7 +155,7 @@ export class TasksService {
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const { deptCode, accLevelName, position, code, scheduledAt } = getMovementTaskRowValues(worksheet.getRow(rowNumber));
       const { department, accLevel, employee } = await this.validateMovementFields(deptCode, accLevelName, code);
-      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id);
+      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, employee.name, employee.last_name);
       const previous = formatEmployeeEntity(employee);
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.movement, user, queryRunner, previous);
     }

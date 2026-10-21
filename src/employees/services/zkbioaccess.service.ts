@@ -28,23 +28,15 @@ export class ZkBioaccessService implements ZkBioaccessDatasource {
     }
 
     async inactivateEmployee(inactiveEmployeeDto: InactiveEmployeeDto): Promise<boolean> {
-        try {
-            await this.http.post('/person/leave', inactiveEmployeeDto);
-            return true;
-        } catch (error) {
-            console.log(error);
-            throw new InternalServerErrorException("Hubo un error en la creación/actualización del empleado");
-        }
+        const response = await this.http.post('/person/leave', inactiveEmployeeDto);
+        console.log(response);
+        return true;
     }
 
     async createOrUpdateEmployee(createEmployeeDto: CreateEmployeeDto, image?: string): Promise<boolean> {
-        try {
-            const response: any = await this.http.post('/person/add', { ...createEmployeeDto, personPhoto: image });
-            if (response.code == -63) return false;
-            return true;
-        } catch (error) {
-            console.log(error);
-            throw new InternalServerErrorException("Hubo un error en la creación/actualización del empleado");
-        }
+        const response: any = await this.http.post('/person/add', { ...createEmployeeDto, personPhoto: image });
+        if (response.code == -63) throw new BadRequestException(response.message);
+        if (response.code == -29) throw new BadRequestException(response.message);
+        return true;
     }
 }
