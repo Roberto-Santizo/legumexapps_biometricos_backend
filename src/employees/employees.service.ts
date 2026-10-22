@@ -97,10 +97,6 @@ export class EmployeesService {
     return 'Foto actualizada correctamente';
   }
 
-  servePhoto(key: string, req: Request, res: Response) {
-    return serveFile(this.photos, key, { req, res, disposition: 'inline' });
-  }
-
   async getEmployeeLevels(id: string) {
     const employeeLevels = await this.accLevelEmployeeRepository.find({ where: { pers_person_id: id } });
     return AccLevelEmployeeResource.accLevelEmployeeCollection(employeeLevels);

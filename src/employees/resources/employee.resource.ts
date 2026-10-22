@@ -25,6 +25,6 @@ export class EmployeeResource {
 
     static getPhotoUrl(key: string) {
         const appUrl = process.env.APP_URL;
-        return `${appUrl}/api/employees/photos/${encodeURIComponent(key)}.jpg`;
+        return `${appUrl}/api/photos/${encodeURIComponent(key)}.jpg`;
     }
 }

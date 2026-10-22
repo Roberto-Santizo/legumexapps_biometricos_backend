@@ -1,10 +1,8 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, BadRequestException, UploadedFile, UploadedFiles } from '@nestjs/common';
-import { CreatePhotoDto } from './dto/create-photo.dto.js';
+import { Controller, Get, Post, Patch, Param, Delete, UseInterceptors, BadRequestException, UploadedFiles, Req, Res, UploadedFile } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { imageFilter } from '../common/helpers/image-filter.js';
 import { PhotosService } from './photos.service.js';
-import { UpdatePhotoDto } from './dto/update-photo.dto.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
 
 @Controller('photos')
@@ -13,7 +11,7 @@ export class PhotosController {
 
   @Post()
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
-  @UseInterceptors(FilesInterceptor('files', 10, {
+  @UseInterceptors(FilesInterceptor('files', 100, {
     fileFilter: imageFilter
   }))
   create(@UploadedFiles() files: any[]) {
@@ -21,23 +19,23 @@ export class PhotosController {
     return this.photosService.create(files);
   }
 
-  @Get()
-  findAll() {
-    return this.photosService.findAll();
+  @Get(':key')
+  servePhoto(@Param('key') key: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.photosService.servePhoto(key, req, res);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.photosService.findOne(+id);
+  @Patch(':key')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @UseInterceptors(FileInterceptor('file', {
+    fileFilter: imageFilter
+  }))
+  update(@UploadedFile() file: any, @Param('key') key: string) {
+    if (!file) throw new BadRequestException('Asegurese que la foto exista y sea una imágen');
+    return this.photosService.update(key, file);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePhotoDto: UpdatePhotoDto) {
-    return this.photosService.update(+id, updatePhotoDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.photosService.remove(+id);
+  @Delete(':key')
+  remove(@Param('key') key: string) {
+    return this.photosService.remove(key);
   }
 }

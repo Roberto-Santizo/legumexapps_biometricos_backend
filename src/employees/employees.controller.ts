@@ -184,25 +184,4 @@ export class EmployeesController {
     if (!file) throw new BadRequestException("Make sure that the file exists and is an image");
     return this.employeesService.updateEmployeePhoto(id, file);
   }
-
-  @Get('photos/:key')
-  @ApiOperation({
-    summary: 'Ver foto de empleado',
-    description: 'Devuelve la imagen guardada en el almacenamiento de fotos bajo la key indicada (inline, cache privada de 24 h), para mostrarla en el navegador.',
-  })
-  @ApiParam({
-    name: 'key',
-    type: String,
-    description: 'Nombre del archivo de la foto (<pin>.jpg)',
-    example: '10045.jpg',
-  })
-  @ApiProduces('image/png', 'image/jpeg', 'image/gif')
-  @ApiOkResponse({
-    description: 'La imagen del empleado',
-    schema: { type: 'string', format: 'binary' },
-  })
-  @ApiNotFoundResponse({ description: 'No existe una foto con esa key' })
-  getEmployeePhoto(@Param('key') key: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.employeesService.servePhoto(key, req, res);
-  }
 }
