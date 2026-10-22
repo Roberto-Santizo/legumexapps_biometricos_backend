@@ -165,4 +165,9 @@ export class PhotosController {
   remove(@Param('key') key: string) {
     return this.photosService.remove(key);
   }
+
+  @Get('/getBuffer/:key')
+  getBuffer(@Param('key') key: string){
+    return this.photosService.getBuffer(key);
+  }
 }

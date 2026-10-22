@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
-import { InjectDisk, serveFile, StorageDisk } from '@nestjs/storage';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { InjectDisk, serveFile, StorageDisk, StorageError, StorageFileNotFoundError } from '@nestjs/storage';
 
 @Injectable()
 export class PhotosService {
@@ -53,6 +53,19 @@ export class PhotosService {
     } catch (error) {
       this.logger.debug(error);
       throw new InternalServerErrorException('Hubo un error al cargar la foto');
+    }
+  }
+
+  async getBuffer(key: string) {
+    try {
+      const image = await this.photos.getBuffer(`${key}.jpg`);
+      return image;
+    } catch (error) {
+      if (error instanceof StorageError) {
+        throw new BadRequestException(error.message);
+      }
+
+      throw new InternalServerErrorException("Hubo un error al leer la foto");
     }
   }
 
