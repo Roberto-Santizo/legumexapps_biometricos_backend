@@ -30,11 +30,7 @@ export class CronService {
         private readonly dateService: DateHandlerService
     ) { }
 
-    // @Cron('0 0 5 * * *', {
-    //     timeZone: 'America/Guatemala',
-    // })
-
-    @Cron(CronExpression.EVERY_10_SECONDS)
+    @Cron('0 0 5 * * *', { timeZone: 'America/Guatemala' })
     async executeTasks() {
         const tasksPending = await this.taskRepository.find({ where: { status: TaskStatusEnum.pending } });
         const pins = [...new Set(tasksPending.map((r) => r.pin))];
