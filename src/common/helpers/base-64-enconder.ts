@@ -7,3 +7,8 @@ export function imageToBase64(file: any, withPrefix = false): string {
   const base64 = file.buffer.toString('base64');
   return withPrefix ? `data:${file.mimetype};base64,${base64}` : base64;
 }
+
+export function imageBufferToBase64(file: any): string {
+  const base64 = file.toString('base64');
+  return base64;
+}

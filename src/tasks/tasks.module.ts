@@ -9,6 +9,8 @@ import { Task } from './entities/task.entity.js';
 import { TasksController } from './tasks.controller.js';
 import { TasksService } from './tasks.service.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { PhotosModule } from '../photos/photos.module.js';
+import { InactiveEmployeesModule } from '../inactive-employees/inactive-employees.module.js';
 
 @Module({
   controllers: [TasksController],
@@ -20,7 +22,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     AccLevelModule,
     EmployeesModule,
     CommonModule,
-    EmployeesModule
+    EmployeesModule,
+    InactiveEmployeesModule,
+    PhotosModule
   ]
 })
 export class TasksModule {}
