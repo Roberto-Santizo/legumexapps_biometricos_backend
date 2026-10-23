@@ -17,6 +17,8 @@ import storage from './common/config/storage.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PhotosModule } from './photos/photos.module.js';
 import { EmployeesFincaModule } from './employees-finca/employees-finca.module.js';
+import { DepartmentsModule } from './departments/departments.module.js';
+import { BiometricsModule } from './biometrics/biometrics.module.js';
 
 @Module({
   imports: [
@@ -77,6 +79,8 @@ import { EmployeesFincaModule } from './employees-finca/employees-finca.module.j
     EmployeeTransactionsModule,
     PhotosModule,
     EmployeesFincaModule,
+    DepartmentsModule,
+    BiometricsModule,
   ],
 })
 export class AppModule { }
