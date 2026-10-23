@@ -167,7 +167,8 @@ export class PhotosController {
   }
 
   @Get('/getBuffer/:key')
-  getBuffer(@Param('key') key: string){
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  getBuffer(@Param('key') key: string) {
     return this.photosService.getBuffer(key);
   }
 }

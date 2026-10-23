@@ -7,9 +7,9 @@ export const getCreationTaskRowValues = (row: ExcelJS.Row) => {
     const position = row.getCell(1).value as string;
     const code = row.getCell(2).value as string;
     const name = row.getCell(3).value as string;
-    const scheduledAt = row.getCell(6).value as string;
     const deptCode = row.getCell(4).value as string;
     const accLevelName = row.getCell(5).value as string;
+    const scheduledAt = row.getCell(6).value as string;
 
     if (!position || !code || !deptCode || !accLevelName || !scheduledAt || !name) throw new BadRequestException("Asegurese que el excel cumpla con el formato esperado");
 

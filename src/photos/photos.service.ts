@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
-import { InjectDisk, serveFile, StorageDisk, StorageError, StorageFileNotFoundError } from '@nestjs/storage';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { InjectDisk, serveFile, StorageDisk, StorageError } from '@nestjs/storage';
+import { imageBufferToBase64 } from '../common/helpers/base-64-enconder.js';
 
 @Injectable()
 export class PhotosService {

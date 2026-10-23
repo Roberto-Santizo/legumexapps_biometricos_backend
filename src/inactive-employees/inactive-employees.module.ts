@@ -18,6 +18,9 @@ import { EmployeesModule } from '../employees/employees.module.js';
     CommonModule,
     AuthDepartmentModule,
     EmployeesModule
+  ],
+  exports:[
+    TypeOrmModule,
   ]
 })
 export class InactiveEmployeesModule { }

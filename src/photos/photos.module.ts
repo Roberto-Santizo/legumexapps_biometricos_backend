@@ -10,6 +10,9 @@ import { CommonModule } from '../common/common.module.js';
   imports:[
     AuthModule,
     CommonModule
+  ],
+  exports:[ 
+    PhotosService
   ]
 })
 export class PhotosModule {}
