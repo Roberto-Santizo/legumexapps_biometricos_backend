@@ -7,10 +7,11 @@ import { DateHandlerService } from './services/date-handler.service.js';
 import { Http } from './config/http.js';
 import { EmailService } from './services/email.service.js';
 import { ExcelService } from './services/excel.service.js';
+import { HttpFincas } from './config/http-fincas.js';
 
 @Module({
   imports: [ConfigModule],
-  providers: [DatabaseHelpers, Filters, IdGeneratorService, DateHandlerService, Http, EmailService, ExcelService],
-  exports: [DatabaseHelpers, Filters, IdGeneratorService, DateHandlerService, Http, EmailService, ExcelService],
+  providers: [DatabaseHelpers, Filters, IdGeneratorService, DateHandlerService, Http, EmailService, ExcelService, HttpFincas],
+  exports: [DatabaseHelpers, Filters, IdGeneratorService, DateHandlerService, Http, EmailService, ExcelService, HttpFincas],
 })
 export class CommonModule { }

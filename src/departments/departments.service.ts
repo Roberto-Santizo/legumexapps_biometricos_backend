@@ -24,6 +24,8 @@ export class DepartmentsService {
   async create(createDepartmentDto: CreateDepartmentDto) {
     const exists = await this.findOneByCode(createDepartmentDto.dept_code);
     if (exists) throw new BadRequestException(`El departamento con código ${createDepartmentDto.dept_code} ya existe`);
+
+    await this.biotimeService.createDepartment(createDepartmentDto);
     return createDepartmentDto;
   }
 
