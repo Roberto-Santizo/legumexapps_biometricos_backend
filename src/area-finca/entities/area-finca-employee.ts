@@ -1,10 +1,10 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 import { type AreaFinca } from "./area-finca.entity.js";
 import { type EmployeesFinca } from "../../employees-finca/entities/employees-finca.entity.js";
 
 @Entity('personnel_employee_area')
 export class AreaFincaEmployee {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn('increment')
     id: number;
 
     @Column('int')

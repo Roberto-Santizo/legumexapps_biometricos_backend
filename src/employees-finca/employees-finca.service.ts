@@ -10,7 +10,8 @@ import { Repository } from 'typeorm';
 import { UpdateEmployeesFincaDto } from './dto/update-employees-finca.dto.js';
 import { EmployeeFincaResource } from './resources/employee-finca.resource.js';
 import { BiotimeService } from '../biometrics/services/biotime.service.js';
-import { EmployeeResign } from './entities/employee-resign.entity.js';
+import { AreaFincaEmployee } from '../area-finca/entities/area-finca-employee.js';
+import { AddAreaEmployeeDto } from './dto/add-area-employee.dto.js';
 
 @Injectable()
 export class EmployeesFincaService {
@@ -18,8 +19,8 @@ export class EmployeesFincaService {
     @InjectRepository(EmployeesFinca, MSSQL_FINCAS_CONNECTION)
     private readonly employeesFincaRepository: Repository<EmployeesFinca>,
 
-    @InjectRepository(EmployeeResign, MSSQL_FINCAS_CONNECTION)
-    private readonly employeesFincaResignRepository: Repository<EmployeeResign>,
+    @InjectRepository(AreaFincaEmployee, MSSQL_FINCAS_CONNECTION)
+    private readonly areaFincaEmployeeRepository: Repository<AreaFincaEmployee>,
 
     private readonly biotimeService: BiotimeService,
 
@@ -83,6 +84,27 @@ export class EmployeesFincaService {
     const message = await this.biotimeService.reinstatmentEmployee(id);
 
     return message;
+  }
+
+  async getAreaEmployeeById(id: number) {
+    const areaEmployee = await this.areaFincaEmployeeRepository.findOneBy({ id });
+
+    if (!areaEmployee) throw new NotFoundException(`El area-empleado con id ${id} no existe`);
+
+    return areaEmployee;
+  }
+
+  async addEmployeeArea(addAreaEmployeeDto: AddAreaEmployeeDto){
+    await this.findOne(addAreaEmployeeDto.employee_id);
+    const newAreaEmployee = this.areaFincaEmployeeRepository.create(addAreaEmployeeDto);
+    await this.areaFincaEmployeeRepository.save(newAreaEmployee);
+    return 'Area Agregada Correctamente';
+  }
+
+  async deleteEmployeeArea(id: number) {
+    await this.getAreaEmployeeById(id);
+    await this.areaFincaEmployeeRepository.delete({ id });
+    return 'Area desasignada correctamente';
   }
 
   private async getLastCode() {
