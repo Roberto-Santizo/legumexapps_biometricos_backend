@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsInt, IsString, Min, MinLength } from "class-validator";
+import { IsArray, IsInt, IsString, Min, MinLength } from "class-validator";
 
 export class CreateEmployeesFincaDto {
     @IsString()

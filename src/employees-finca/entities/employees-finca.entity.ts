@@ -1,6 +1,7 @@
-import { Column, Entity, ManyToOne, PrimaryColumn, JoinColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryColumn, JoinColumn, OneToMany } from 'typeorm';
 import { Department } from "../../departments/entities/department.entity.js";
 import { PositionFinca } from '../../position-finca/entities/position-finca.entity.js';
+import { AreaFincaEmployee } from '../../area-finca/entities/area-finca-employee.js';
 
 @Entity('personnel_employee')
 export class EmployeesFinca {
@@ -40,4 +41,10 @@ export class EmployeesFinca {
     )
     @JoinColumn({ name: 'position_id' })
     position: PositionFinca;
+
+    @OneToMany(
+        () => AreaFincaEmployee,
+        (areaFincaEmployee) => areaFincaEmployee.employee
+    )
+    areas: AreaFincaEmployee[];
 }

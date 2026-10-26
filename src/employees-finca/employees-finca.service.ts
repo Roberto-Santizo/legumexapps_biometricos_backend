@@ -8,6 +8,8 @@ import { MSSQL_FINCAS_CONNECTION } from '../common/constants/connections.js';
 import { paginate } from '../common/helpers/paginate.js';
 import { Repository } from 'typeorm';
 import { UpdateEmployeesFincaDto } from './dto/update-employees-finca.dto.js';
+import { EmployeeFincaResource } from './resources/employee-finca.resource.js';
+import { BiotimeService } from '../biometrics/services/biotime.service.js';
 
 @Injectable()
 export class EmployeesFincaService {
@@ -15,12 +17,15 @@ export class EmployeesFincaService {
     @InjectRepository(EmployeesFinca, MSSQL_FINCAS_CONNECTION)
     private readonly employeesFincaRepository: Repository<EmployeesFinca>,
 
+    private readonly biotimeService: BiotimeService,
+
     private readonly filters: Filters
   ) { }
 
 
-  create(createEmployeesFincaDto: CreateEmployeesFincaDto) {
-    return 'This action adds a new employeesFinca';
+  async create(createEmployeesFincaDto: CreateEmployeesFincaDto) {
+    await this.biotimeService.createEmployee(createEmployeesFincaDto);
+    return 'Empleado Creado Correctamente';
   }
 
   async findAll(employeesFincasQueryDto: EmployeesFincasQueryDto) {
@@ -33,14 +38,14 @@ export class EmployeesFincaService {
       where
     });
 
-    return paginate(employees, total, limit, offset);
+    return paginate(EmployeeFincaResource.collection(employees), total, limit, offset);
   }
 
   async findOne(id: number) {
-    const employee = await this.employeesFincaRepository.findOneBy({ id });
+    const employee = await this.employeesFincaRepository.findOne({ where: { id }, relations: { areas: true, } });
     if (!employee) throw new NotFoundException(`El empleado con ID ${id} no existe`);
 
-    return employee;
+    return EmployeeFincaResource.employeeDetails(employee);
   }
 
   update(id: number, updateEmployeesFincaDto: UpdateEmployeesFincaDto) {

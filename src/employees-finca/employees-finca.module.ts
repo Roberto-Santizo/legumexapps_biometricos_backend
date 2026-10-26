@@ -6,6 +6,7 @@ import { EmployeesFincaService } from './employees-finca.service.js';
 import { Module } from '@nestjs/common';
 import { MSSQL_FINCAS_CONNECTION } from '../common/constants/connections.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BiometricsModule } from '../biometrics/biometrics.module.js';
 
 @Module({
   controllers: [EmployeesFincaController],
@@ -13,7 +14,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   imports: [
     TypeOrmModule.forFeature([EmployeesFinca], MSSQL_FINCAS_CONNECTION),
     AuthModule,
-    CommonModule
+    CommonModule,
+    BiometricsModule
   ],
 })
 export class EmployeesFincaModule { }

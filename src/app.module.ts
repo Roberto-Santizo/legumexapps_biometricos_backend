@@ -20,6 +20,7 @@ import { EmployeesFincaModule } from './employees-finca/employees-finca.module.j
 import { DepartmentsModule } from './departments/departments.module.js';
 import { BiometricsModule } from './biometrics/biometrics.module.js';
 import { PositionFincaModule } from './position-finca/position-finca.module.js';
+import { AreaFincaModule } from './area-finca/area-finca.module.js';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { PositionFincaModule } from './position-finca/position-finca.module.js';
     DepartmentsModule,
     BiometricsModule,
     PositionFincaModule,
+    AreaFincaModule,
   ],
 })
 export class AppModule { }
