@@ -12,9 +12,9 @@ export class BiotimeService implements BiotimeServiceDatasource {
         private readonly http: HttpFincas,
     ) { }
 
-    async createEmployee(payload: CreateEmployeesFincaDto): Promise<string> {
+    async createEmployee(payload: CreateEmployeesFincaDto, code: number): Promise<string> {
         try {
-            await this.http.post('/personnel/api/employees/', { ...payload, emp_code: "1161", company: 1 });
+            await this.http.post('/personnel/api/employees/', { ...payload, emp_code: `${code}`, company: 1 });
 
             return 'Empleado Creado Correctamente';
         } catch (error: any) {

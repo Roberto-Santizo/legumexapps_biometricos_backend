@@ -24,7 +24,8 @@ export class EmployeesFincaService {
 
 
   async create(createEmployeesFincaDto: CreateEmployeesFincaDto) {
-    await this.biotimeService.createEmployee(createEmployeesFincaDto);
+    const code = await this.getLastCode();
+    await this.biotimeService.createEmployee(createEmployeesFincaDto, code);
     return 'Empleado Creado Correctamente';
   }
 
@@ -50,5 +51,15 @@ export class EmployeesFincaService {
 
   update(id: number, updateEmployeesFincaDto: UpdateEmployeesFincaDto) {
     return `This action updates a #${id} employeesFinca`;
+  }
+
+  private async getLastCode() {
+    const { emp_code } = await this.employeesFincaRepository
+      .createQueryBuilder('employee')
+      .select('employee.emp_code', 'emp_code')
+      .orderBy('CAST(employee.emp_code AS INTEGER)', 'DESC')
+      .getRawOne();
+
+    return (+emp_code) + 1;
   }
 }

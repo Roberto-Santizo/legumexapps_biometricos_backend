@@ -6,5 +6,5 @@ export abstract class BiotimeServiceDatasource {
     abstract createDepartment(payload: CreateDepartmentDto): Promise<string>;
 
     //EMPLEADOS
-    abstract createEmployee(payload: CreateEmployeesFincaDto): Promise<string>;
+    abstract createEmployee(payload: CreateEmployeesFincaDto, code: number): Promise<string>;
 }
