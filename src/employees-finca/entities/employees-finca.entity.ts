@@ -1,7 +1,8 @@
-import { Column, Entity, ManyToOne, PrimaryColumn, JoinColumn, OneToMany } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryColumn, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { Department } from "../../departments/entities/department.entity.js";
 import { PositionFinca } from '../../position-finca/entities/position-finca.entity.js';
 import { AreaFincaEmployee } from '../../area-finca/entities/area-finca-employee.js';
+import { EmployeeResign } from './employee-resign.entity.js';
 
 @Entity('personnel_employee')
 export class EmployeesFinca {
@@ -47,4 +48,11 @@ export class EmployeesFinca {
         (areaFincaEmployee) => areaFincaEmployee.employee
     )
     areas: AreaFincaEmployee[];
+
+    @OneToOne(
+        () => EmployeeResign,
+        (employeeResign) => employeeResign.employee,
+        {eager: true}
+    )
+    resign?: EmployeeResign;
 }

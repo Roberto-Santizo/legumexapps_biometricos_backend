@@ -13,7 +13,8 @@ export class EmployeeFincaResource {
             first_name: employee.first_name,
             last_name: employee.last_name,
             department: employee.department.dept_name,
-            position: employee.position.position_name
+            position: employee.position.position_name,
+            resign: employee.resign ? true : false
         }
     }
 

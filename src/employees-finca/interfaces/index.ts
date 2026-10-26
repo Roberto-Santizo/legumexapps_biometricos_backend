@@ -7,6 +7,7 @@ export interface EmployeeFincaListInterface {
     last_name: string;
     department: string;
     position: string;
+    resign: boolean;
 }
 
 export interface EmployeeFincaDetailInterface {
