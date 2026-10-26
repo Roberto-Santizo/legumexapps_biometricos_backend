@@ -3,14 +3,46 @@ import { BiotimeServiceDatasource } from '../abstracts/biotime-service.abstract.
 import { CreateDepartmentDto } from '../../departments/dto/create-department.dto.js';
 import { HttpFincas } from '../../common/config/http-fincas.js';
 import { CreateEmployeesFincaDto } from '../../employees-finca/dto/create-employees-finca.dto.js';
+import { DateHandlerService } from '../../common/services/date-handler.service.js';
 
 @Injectable()
 export class BiotimeService implements BiotimeServiceDatasource {
     private logger = new Logger(BiotimeService.name);
 
     constructor(
+        private readonly dateService: DateHandlerService,
         private readonly http: HttpFincas,
     ) { }
+
+    async reinstatmentEmployee(id: number): Promise<string> {
+       try {
+            await this.http.post('/personnel/api/resigns/reinstatement/', {
+                "employee": id,
+            });
+
+            return 'Empleado dado de alta correctamente';
+        } catch (error: any) {
+            this.logger.debug(error);
+            throw new BadRequestException('Hubo un error al dar de alta al empleado');
+        }
+    }
+
+    async resignEmployee(id: number): Promise<string> {
+        try {
+            await this.http.post('/personnel/api/employees/adjust_resign/', {
+                "resign_date": this.dateService.getCurrentDate('yyyy-MM-dd'),
+                "employees": [id],
+                "resign_type": 1,
+                "reason": "Baja",
+                "disableatt": true
+            });
+
+            return 'Empleado dado de baja correctamente';
+        } catch (error: any) {
+            this.logger.debug(error);
+            throw new BadRequestException('Hubo un error al dar de baja al empleado');
+        }
+    }
 
     async createEmployee(payload: CreateEmployeesFincaDto, code: number): Promise<string> {
         try {

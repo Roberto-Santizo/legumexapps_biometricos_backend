@@ -9,7 +9,7 @@ import { ValidRoles } from '../auth/interfaces/interfaces.js';
 @Controller('employees-finca')
 export class EmployeesFincaController {
   constructor(private readonly employeesFincaService: EmployeesFincaService) { }
-  
+
   @Post()
   @Auth(ValidRoles.admin, ValidRoles.fincas)
   create(@Body() createEmployeesFincaDto: CreateEmployeesFincaDto) {
@@ -21,16 +21,28 @@ export class EmployeesFincaController {
   findAll(@Query() employeesFincasQueryDto: EmployeesFincasQueryDto) {
     return this.employeesFincaService.findAll(employeesFincasQueryDto);
   }
-  
+
   @Get(':id')
   @Auth(ValidRoles.admin, ValidRoles.fincas)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.employeesFincaService.findOne(id);
   }
-  
+
   @Patch(':id')
   @Auth(ValidRoles.admin, ValidRoles.fincas)
-  update(@Param('id') id: string, @Body() updateEmployeesFincaDto: UpdateEmployeesFincaDto) {
-    return this.employeesFincaService.update(+id, updateEmployeesFincaDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateEmployeesFincaDto: UpdateEmployeesFincaDto) {
+    return this.employeesFincaService.update(id, updateEmployeesFincaDto);
+  }
+
+  @Post('/resignEmployee/:id')
+  @Auth(ValidRoles.admin, ValidRoles.fincas)
+  resignEmployee(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesFincaService.resignEmployee(id);
+  }
+
+  @Post('/reinstatmentEmployee/:id')
+  @Auth(ValidRoles.admin, ValidRoles.fincas)
+  reinstatment(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesFincaService.reinstatmentEmployee(id);
   }
 }

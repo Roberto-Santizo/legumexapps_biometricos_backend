@@ -7,4 +7,6 @@ export abstract class BiotimeServiceDatasource {
 
     //EMPLEADOS
     abstract createEmployee(payload: CreateEmployeesFincaDto, code: number): Promise<string>;
+    abstract resignEmployee(id: number): Promise<string>;
+    abstract reinstatmentEmployee(id: number): Promise<string>;
 }

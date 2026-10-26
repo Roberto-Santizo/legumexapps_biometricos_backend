@@ -49,8 +49,22 @@ export class EmployeesFincaService {
     return EmployeeFincaResource.employeeDetails(employee);
   }
 
-  update(id: number, updateEmployeesFincaDto: UpdateEmployeesFincaDto) {
+  async update(id: number, updateEmployeesFincaDto: UpdateEmployeesFincaDto) {
     return `This action updates a #${id} employeesFinca`;
+  }
+
+  async resignEmployee(id: number){
+    await this.findOne(id);
+    const message = await this.biotimeService.resignEmployee(id);
+
+    return message;
+  }
+
+  async reinstatmentEmployee(id: number){
+    await this.findOne(id);
+    const message = await this.biotimeService.reinstatmentEmployee(id);
+
+    return message;
   }
 
   private async getLastCode() {
