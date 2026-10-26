@@ -8,6 +8,9 @@ export class EmployeesFincasQueryDto extends PaginationDto {
 
     @IsOptional()
     first_name: string;
+
+    @IsOptional()
+    emp_code: string;
     
     @IsOptional()
     @Type(() => Number)
