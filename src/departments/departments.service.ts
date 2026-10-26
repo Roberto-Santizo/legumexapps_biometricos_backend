@@ -53,7 +53,21 @@ export class DepartmentsService {
     return department;
   }
 
-  update(id: number, updateDepartmentDto: UpdateDepartmentDto) {
-    return `This action updates a #${id} department`;
+  async update(id: number, updateDepartmentDto: UpdateDepartmentDto) {
+    const department = await this.departmentRepository.preload({ id, ...updateDepartmentDto })
+
+    if (!department) throw new NotFoundException(`El departamento con ID ${id} no existe`);
+    await this.departmentRepository.save(department);
+
+    return department;
+  }
+
+  async remove(id: number) {
+    const department = await this.departmentRepository.findOne({ where: { id }, relations: { 'employees': true } });
+    if (!department) throw new NotFoundException(`El departamento con ID ${id} no existe`);
+    if (department.employees.length > 0) throw new BadRequestException(`El departamento cuenta con empleados asignados, no se puede eliminar`);
+
+    await this.departmentRepository.delete({ id });
+    return 'Departamento eliminado correctamente';
   }
 }

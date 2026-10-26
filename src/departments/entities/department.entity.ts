@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
+import { EmployeesFinca } from "../../employees-finca/entities/employees-finca.entity.js";
 
 @Entity('personnel_department')
 export class Department {
@@ -13,4 +14,10 @@ export class Department {
 
     @Column('int')
     company_id: number;
+
+    @OneToMany(
+        'EmployeesFinca',
+        (employees: EmployeesFinca) => employees.department
+    )
+    employees: EmployeesFinca[];
 }

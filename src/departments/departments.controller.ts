@@ -30,7 +30,13 @@ export class DepartmentsController {
 
   @Patch(':id')
   @Auth(ValidRoles.rrhh, ValidRoles.admin)
-  update(@Param('id') id: string, @Body() updateDepartmentDto: UpdateDepartmentDto) {
-    return this.departmentsService.update(+id, updateDepartmentDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateDepartmentDto: UpdateDepartmentDto) {
+    return this.departmentsService.update(id, updateDepartmentDto);
+  }
+
+  @Delete(':id')
+  @Auth(ValidRoles.rrhh, ValidRoles.admin)
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.departmentsService.remove(id);
   }
 }

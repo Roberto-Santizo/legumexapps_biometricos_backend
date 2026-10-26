@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryColumn, JoinColumn } from 'typeorm';
+import { Department } from "../../departments/entities/department.entity.js";
 
 @Entity('personnel_employee')
 export class EmployeesFinca {
@@ -22,4 +23,12 @@ export class EmployeesFinca {
 
     @Column('int')
     position_id: number;
+
+    @ManyToOne(
+        () => Department,
+        department => department.employees,
+        { eager: true }
+    )
+    @JoinColumn({ name: 'department_id' })
+    department: Department;
 }
