@@ -14,6 +14,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     TypeOrmModule.forFeature([EmployeesFinca], MSSQL_FINCAS_CONNECTION),
     AuthModule,
     CommonModule
-  ]
+  ],
 })
 export class EmployeesFincaModule { }

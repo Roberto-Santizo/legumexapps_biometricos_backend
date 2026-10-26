@@ -19,6 +19,7 @@ import { PhotosModule } from './photos/photos.module.js';
 import { EmployeesFincaModule } from './employees-finca/employees-finca.module.js';
 import { DepartmentsModule } from './departments/departments.module.js';
 import { BiometricsModule } from './biometrics/biometrics.module.js';
+import { PositionFincaModule } from './position-finca/position-finca.module.js';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { BiometricsModule } from './biometrics/biometrics.module.js';
     EmployeesFincaModule,
     DepartmentsModule,
     BiometricsModule,
+    PositionFincaModule,
   ],
 })
 export class AppModule { }

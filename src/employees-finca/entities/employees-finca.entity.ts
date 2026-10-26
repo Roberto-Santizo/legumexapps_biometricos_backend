@@ -1,5 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryColumn, JoinColumn } from 'typeorm';
 import { Department } from "../../departments/entities/department.entity.js";
+import { PositionFinca } from '../../position-finca/entities/position-finca.entity.js';
 
 @Entity('personnel_employee')
 export class EmployeesFinca {
@@ -31,4 +32,12 @@ export class EmployeesFinca {
     )
     @JoinColumn({ name: 'department_id' })
     department: Department;
+
+    @ManyToOne(
+        () => PositionFinca,
+        position => position.employees,
+        { eager: true }
+    )
+    @JoinColumn({ name: 'position_id' })
+    position: PositionFinca;
 }
