@@ -17,5 +17,6 @@ export interface EmployeeFincaDetailInterface {
     last_name: string;
     department: string;
     position: string;
+    resign: boolean;
     areas: AreaFincaInterface[];
 }

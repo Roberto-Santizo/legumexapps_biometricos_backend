@@ -26,6 +26,7 @@ export class EmployeeFincaResource {
             last_name: employee.last_name,
             department: employee.department.dept_name,
             position: employee.position.position_name,
+            resign: employee.resign ? true : false,
             areas: employee.areas.map((area) => {
                 return {
                     id: area.id,
