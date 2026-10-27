@@ -1,17 +1,17 @@
+import { AddAreaEmployeeDto } from './dto/add-area-employee.dto.js';
+import { AreaFincaEmployee } from '../area-finca/entities/area-finca-employee.js';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BiotimeService } from '../biometrics/services/biotime.service.js';
 import { CreateEmployeesFincaDto } from './dto/create-employees-finca.dto.js';
+import { EmployeeFincaResource } from './resources/employee-finca.resource.js';
 import { EmployeesFinca } from './entities/employees-finca.entity.js';
 import { EmployeesFincasQueryDto } from './dto/employee-fincas-query.dto.js';
 import { Filters } from '../common/providers/filters.js';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_FINCAS_CONNECTION } from '../common/constants/connections.js';
 import { paginate } from '../common/helpers/paginate.js';
 import { Repository } from 'typeorm';
 import { UpdateEmployeesFincaDto } from './dto/update-employees-finca.dto.js';
-import { EmployeeFincaResource } from './resources/employee-finca.resource.js';
-import { BiotimeService } from '../biometrics/services/biotime.service.js';
-import { AreaFincaEmployee } from '../area-finca/entities/area-finca-employee.js';
-import { AddAreaEmployeeDto } from './dto/add-area-employee.dto.js';
 
 @Injectable()
 export class EmployeesFincaService {
@@ -61,9 +61,12 @@ export class EmployeesFincaService {
     return employee;
   }
 
-
   async update(id: number, updateEmployeesFincaDto: UpdateEmployeesFincaDto) {
-    return `This action updates a #${id} employeesFinca`;
+    await this.findOne(id);
+
+    const message = await this.biotimeService.updateEmployee(updateEmployeesFincaDto, id);
+
+    return message;
   }
 
   async resignEmployee(id: number) {
@@ -94,7 +97,7 @@ export class EmployeesFincaService {
     return areaEmployee;
   }
 
-  async addEmployeeArea(addAreaEmployeeDto: AddAreaEmployeeDto){
+  async addEmployeeArea(addAreaEmployeeDto: AddAreaEmployeeDto) {
     await this.findOne(addAreaEmployeeDto.employee_id);
     const newAreaEmployee = this.areaFincaEmployeeRepository.create(addAreaEmployeeDto);
     await this.areaFincaEmployeeRepository.save(newAreaEmployee);

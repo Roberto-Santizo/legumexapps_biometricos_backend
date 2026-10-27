@@ -4,6 +4,7 @@ import { CreateDepartmentDto } from '../../departments/dto/create-department.dto
 import { HttpFincas } from '../../common/config/http-fincas.js';
 import { CreateEmployeesFincaDto } from '../../employees-finca/dto/create-employees-finca.dto.js';
 import { DateHandlerService } from '../../common/services/date-handler.service.js';
+import { UpdateEmployeesFincaDto } from '../../employees-finca/dto/update-employees-finca.dto.js';
 
 @Injectable()
 export class BiotimeService implements BiotimeServiceDatasource {
@@ -14,8 +15,19 @@ export class BiotimeService implements BiotimeServiceDatasource {
         private readonly http: HttpFincas,
     ) { }
 
+    async updateEmployee(payload: UpdateEmployeesFincaDto, id: number): Promise<string> {
+        try {
+            await this.http.patch(`/personnel/api/employees/${id}/`, payload)
+
+            return 'Empleado actualizado correctamente';
+        } catch (error: any) {
+            this.logger.debug(error);
+            throw new BadRequestException('Hubo un error al actualizar el empleado');
+        }
+    }
+
     async reinstatmentEmployee(id: number): Promise<string> {
-       try {
+        try {
             await this.http.post('/personnel/api/resigns/reinstatement/', {
                 "employee": id,
             });
