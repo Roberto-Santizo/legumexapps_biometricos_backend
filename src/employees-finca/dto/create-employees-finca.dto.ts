@@ -47,7 +47,6 @@ export class CreateEmployeesFincaDto {
         type: [Number],
         example: [1, 3],
     })
-    @IsArray()
-    @IsInt({ each: true })
-    area: number[];
+    @IsInt()
+    area: number;
 }

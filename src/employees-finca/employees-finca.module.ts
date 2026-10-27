@@ -9,12 +9,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BiometricsModule } from '../biometrics/biometrics.module.js';
 import { EmployeeResign } from './entities/employee-resign.entity.js';
 import { AreaFincaEmployee } from '../area-finca/entities/area-finca-employee.js';
+import { Terminal } from '../biometrics/entities/terminal.entity.js';
 
 @Module({
   controllers: [EmployeesFincaController],
   providers: [EmployeesFincaService],
   imports: [
-    TypeOrmModule.forFeature([EmployeesFinca, EmployeeResign, AreaFincaEmployee], MSSQL_FINCAS_CONNECTION),
+    TypeOrmModule.forFeature([EmployeesFinca, EmployeeResign, AreaFincaEmployee, Terminal], MSSQL_FINCAS_CONNECTION),
     AuthModule,
     CommonModule,
     BiometricsModule

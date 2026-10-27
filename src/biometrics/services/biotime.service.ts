@@ -58,7 +58,8 @@ export class BiotimeService implements BiotimeServiceDatasource {
 
     async createEmployee(payload: CreateEmployeesFincaDto, code: number): Promise<string> {
         try {
-            await this.http.post('/personnel/api/employees/', { ...payload, emp_code: `${code}`, company: 1 });
+            const { area, ...rest } = payload;
+            await this.http.post('/personnel/api/employees/', { ...rest, area: [area], emp_code: `${code}`, company: 1 });
 
             return 'Empleado Creado Correctamente';
         } catch (error: any) {

@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_FINCAS_CONNECTION } from '../common/constants/connections.js';
 import { paginate } from '../common/helpers/paginate.js';
 import { Repository } from 'typeorm';
+import { Terminal } from '../biometrics/entities/terminal.entity.js';
 import { UpdateEmployeesFincaDto } from './dto/update-employees-finca.dto.js';
 
 @Injectable()
@@ -22,13 +23,16 @@ export class EmployeesFincaService {
     @InjectRepository(AreaFincaEmployee, MSSQL_FINCAS_CONNECTION)
     private readonly areaFincaEmployeeRepository: Repository<AreaFincaEmployee>,
 
-    private readonly biotimeService: BiotimeService,
+    @InjectRepository(Terminal, MSSQL_FINCAS_CONNECTION)
+    private readonly terminalRepository: Repository<Terminal>,
 
+    private readonly biotimeService: BiotimeService,
     private readonly filters: Filters
   ) { }
 
 
   async create(createEmployeesFincaDto: CreateEmployeesFincaDto) {
+    await this.validateTerminal(createEmployeesFincaDto.area);
     const code = await this.getLastCode();
     await this.biotimeService.createEmployee(createEmployeesFincaDto, code);
     return 'Empleado Creado Correctamente';
@@ -108,6 +112,12 @@ export class EmployeesFincaService {
     await this.getAreaEmployeeById(id);
     await this.areaFincaEmployeeRepository.delete({ id });
     return 'Area desasignada correctamente';
+  }
+
+  private async validateTerminal(area_id: number) {
+    const terminal = await this.terminalRepository.findOne({ where: { area_id: area_id } });
+    if (!terminal) throw new BadRequestException(`El area no tiene una terminal asignada`);
+    if (terminal.user_count >= 800) throw new BadRequestException(`El limite de usuarios ${terminal.alias} ya fue alcanzado`);
   }
 
   private async getLastCode() {
