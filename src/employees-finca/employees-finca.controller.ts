@@ -79,16 +79,17 @@ export class EmployeesFincaController {
   @Auth(ValidRoles.admin, ValidRoles.fincas)
   @ApiOperation({
     summary: 'Actualizar empleado',
-    description: 'Pendiente de implementación: actualmente no modifica datos y solo devuelve un mensaje.',
+    description: 'Actualiza parcialmente el empleado en BioTime (/personnel/api/employees/<id>/). Todos los campos del body son opcionales; solo se envían los campos incluidos.',
   })
   @ApiParam({ name: 'id', type: Number, description: 'ID del empleado', example: 125 })
   @ApiOkResponse({
-    description: 'Mensaje de la acción',
-    schema: { type: 'string', example: 'This action updates a #125 employeesFinca' },
+    description: 'Empleado actualizado en BioTime',
+    schema: { type: 'string', example: 'Empleado actualizado correctamente' },
   })
   @ApiBadRequestResponse({
-    description: 'El `id` no es un número entero o datos inválidos (validación del body o propiedades no permitidas)',
+    description: 'El `id` no es un número entero, datos inválidos (validación del body o propiedades no permitidas) o BioTime rechazó la actualización ("Hubo un error al actualizar el empleado")',
   })
+  @ApiNotFoundResponse({ description: 'El empleado no existe ("El empleado con ID <id> no existe")' })
   update(@Param('id', ParseIntPipe) id: number, @Body() updateEmployeesFincaDto: UpdateEmployeesFincaDto) {
     return this.employeesFincaService.update(id, updateEmployeesFincaDto);
   }

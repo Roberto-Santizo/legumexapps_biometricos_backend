@@ -72,4 +72,7 @@ export class EmployeeFincaDetailResponse extends EmployeeFincaListResponse imple
         type: [EmployeeFincaAreaResponse],
     })
     areas: EmployeeFincaAreaResponse[];
+
+    department_id: number;
+    position_id: number;
 }
