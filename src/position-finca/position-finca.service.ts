@@ -9,6 +9,7 @@ import { PositionFincaQueryDto } from './dto/position-finca-query.dto.js';
 import { Repository } from 'typeorm';
 import { UpdatePositionFincaDto } from './dto/update-position-finca.dto.js';
 import { EmployeesFinca } from '../employees-finca/entities/employees-finca.entity.js';
+import { FincaPositionResource } from './resource/finca-position.resource.js';
 
 @Injectable()
 export class PositionFincaService {
@@ -26,10 +27,10 @@ export class PositionFincaService {
     const exists = await this.findOneByCode(createPositionFincaDto.position_code);
     if (exists) throw new BadRequestException(`El código ${createPositionFincaDto.position_code} ya existe`);
 
-    const department = this.positionFincaRepository.create({ ...createPositionFincaDto, is_default: 0, company_id: 1, parent_position_id: 1 });
-    await this.positionFincaRepository.save(department);
+    const position = this.positionFincaRepository.create({ ...createPositionFincaDto, is_default: 0, company_id: 1, parent_position_id: 1 });
+    await this.positionFincaRepository.save(position);
 
-    return department;
+    return FincaPositionResource.fincaPositionResource(position);
   }
 
   async findAll(positionFincaQueryDto: PositionFincaQueryDto) {
@@ -42,7 +43,7 @@ export class PositionFincaService {
       where
     });
 
-    return paginate(positions, total, limit, offset);
+    return paginate(FincaPositionResource.collection(positions), total, limit, offset);
   }
 
   async findOne(id: number) {
