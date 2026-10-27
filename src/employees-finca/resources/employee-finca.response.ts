@@ -68,11 +68,20 @@ export class EmployeeFincaListResponse implements EmployeeFincaListInterface {
 
 export class EmployeeFincaDetailResponse extends EmployeeFincaListResponse implements EmployeeFincaDetailInterface {
     @ApiProperty({
+        description: 'ID del departamento del empleado',
+        example: 2,
+    })
+    department_id: number;
+
+    @ApiProperty({
+        description: 'ID de la posición del empleado',
+        example: 4,
+    })
+    position_id: number;
+
+    @ApiProperty({
         description: 'Áreas asignadas al empleado',
         type: [EmployeeFincaAreaResponse],
     })
     areas: EmployeeFincaAreaResponse[];
-
-    department_id: number;
-    position_id: number;
 }

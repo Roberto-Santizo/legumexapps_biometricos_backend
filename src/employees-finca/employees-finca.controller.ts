@@ -65,7 +65,7 @@ export class EmployeesFincaController {
   @Auth(ValidRoles.admin, ValidRoles.fincas)
   @ApiOperation({
     summary: 'Obtener empleado',
-    description: 'Devuelve el detalle de un empleado de fincas, incluyendo las áreas asignadas.',
+    description: 'Devuelve el detalle de un empleado de fincas, incluyendo los IDs de departamento y posición (útiles para precargar el formulario de actualización) y las áreas asignadas.',
   })
   @ApiParam({ name: 'id', type: Number, description: 'ID del empleado', example: 125 })
   @ApiOkResponse({ description: 'Detalle del empleado', type: EmployeeFincaDetailResponse })
