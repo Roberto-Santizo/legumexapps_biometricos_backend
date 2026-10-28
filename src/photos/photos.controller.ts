@@ -1,5 +1,5 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Patch, Param, Delete, UseInterceptors, BadRequestException, UploadedFiles, Req, Res, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Delete, UseInterceptors, BadRequestException, UploadedFiles, Req, Res, UploadedFile, Query, Body, ParseUUIDPipe } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -20,13 +20,17 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { imageFilter } from '../common/helpers/image-filter.js';
 import { PhotosService } from './photos.service.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
+import { PhotoQueryDto } from './dto/photo-query.dto.js';
+import { GetUser } from '../auth/decorators/get-user.decorator.js';
+import { User } from '../auth/entities/user.entity.js';
+import { CreatePhotoDto } from './dto/create-photo.dto.js';
 
 @ApiTags('Fotos')
 @Controller('photos')
 export class PhotosController {
   constructor(private readonly photosService: PhotosService) { }
 
-  @Post()
+  @Post('/uploadFiles')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @UseInterceptors(FilesInterceptor('files', 100, {
     fileFilter: imageFilter
@@ -76,9 +80,23 @@ export class PhotosController {
     description: 'Token ausente o inválido ("Token not valid") o el usuario no está activo ("User is not active")',
   })
   @ApiForbiddenResponse({ description: 'El usuario autenticado no tiene el rol admin o rrhh ("Unauthorized")' })
-  create(@UploadedFiles() files: any[]) {
-    if (files.length === 0) throw new BadRequestException("Make sure that the file exists and is an image");
-    return this.photosService.create(files);
+  uploadFiles(@UploadedFiles() files: any[], @GetUser() user: User) {
+    if (files.length === 0) throw new BadRequestException("Asegurate de que vengan archivos y sean imagenes");
+    return this.photosService.uploadFiles(files, user);
+  }
+
+
+  @Post()
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
+  create(@UploadedFile() file: any, @Body() createPhotoDto: CreatePhotoDto, @GetUser() user: User) {
+    if (!file) throw new BadRequestException(`Asegurate de que la imagen exista`);
+    return this.photosService.create(createPhotoDto, user, file);
+  }
+
+  @Get()
+  findAll(@Query() photosQueryDto: PhotoQueryDto) {
+    return this.photosService.findAll(photosQueryDto);
   }
 
   @Get(':key')
@@ -102,7 +120,7 @@ export class PhotosController {
     return this.photosService.servePhoto(key, req, res);
   }
 
-  @Patch(':key')
+  @Patch(':id')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @UseInterceptors(FileInterceptor('file', {
     fileFilter: imageFilter
@@ -110,10 +128,10 @@ export class PhotosController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Actualizar foto',
-    description: 'Reemplaza (o crea) la foto <key>.jpg en el almacenamiento con la imagen enviada.',
+    description: 'Reemplaza (o crea) la foto <id>.jpg en el almacenamiento con la imagen enviada.',
   })
   @ApiParam({
-    name: 'key',
+    name: 'id',
     type: String,
     description: 'Nombre de la foto sin extensión (normalmente el PIN del empleado)',
     example: '10045',
@@ -141,18 +159,18 @@ export class PhotosController {
   })
   @ApiForbiddenResponse({ description: 'El usuario autenticado no tiene el rol admin o rrhh ("Unauthorized")' })
   @ApiInternalServerErrorResponse({ description: 'Error al guardar la foto ("Hubo un error al cargar la foto")' })
-  update(@UploadedFile() file: any, @Param('key') key: string) {
+  update(@UploadedFile() file: any, @Param('id', ParseUUIDPipe) id: string) {
     if (!file) throw new BadRequestException('Asegurese que la foto exista y sea una imágen');
-    return this.photosService.update(key, file);
+    return this.photosService.update(id, file);
   }
 
-  @Delete(':key')
+  @Delete(':id')
   @ApiOperation({
     summary: 'Eliminar foto',
-    description: 'Elimina la foto <key>.jpg del almacenamiento.',
+    description: 'Elimina la foto <id>.jpg del almacenamiento.',
   })
   @ApiParam({
-    name: 'key',
+    name: 'id',
     type: String,
     description: 'Nombre de la foto sin extensión (normalmente el PIN del empleado)',
     example: '10045',
@@ -162,8 +180,8 @@ export class PhotosController {
     schema: { type: 'string', example: 'Foto Eliminada correctamente' },
   })
   @ApiInternalServerErrorResponse({ description: 'Error al eliminar la foto ("Hubo un error al cargar la foto")' })
-  remove(@Param('key') key: string) {
-    return this.photosService.remove(key);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.photosService.remove(id);
   }
 
   @Get('/getBuffer/:key')

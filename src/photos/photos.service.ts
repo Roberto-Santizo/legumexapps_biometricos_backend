@@ -1,60 +1,76 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { CreatePhotoDto } from './dto/create-photo.dto.js';
+import { Filters } from '../common/providers/filters.js';
 import { InjectDisk, serveFile, StorageDisk, StorageError } from '@nestjs/storage';
-import { imageBufferToBase64 } from '../common/helpers/base-64-enconder.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Photo } from './entities/photo.entity.js';
+import { PhotoQueryDto } from './dto/photo-query.dto.js';
+import { Repository } from 'typeorm';
+import { User } from '../auth/entities/user.entity.js';
 
 @Injectable()
 export class PhotosService {
+
   private readonly logger = new Logger(PhotosService.name);
+
   constructor(
+    @InjectRepository(Photo)
+    private readonly photosRepository: Repository<Photo>,
+
     @InjectDisk('photos')
     private readonly photos: StorageDisk,
+
+    private readonly filters: Filters
   ) { }
 
-  async create(files: any[]) {
-    const errors: string[] = [];
-    this.validateFiles(files);
+  async create(createPhotoDto: CreatePhotoDto, created_by: User, file: any) {
+    const { code } = createPhotoDto;
+    const url = `${code}.jpg`;
 
-    for (let i = 0; i <= files.length - 1; i++) {
-      const file = files[i];
+    await this.getPhotoByCode(code);
+    await this.photos.put(url, file.buffer, { contentType: file.mimetype });
+    const newPhoto = this.photosRepository.create({ code, url, created_by });
 
-      try {
-        const fileName = file.originalname.split('.')[0].toUpperCase();
-        await this.photos.put(`${fileName}.jpg`, file.buffer, { contentType: file.mimetype });
-      } catch (error) {
-        this.logger.debug(error);
-        errors.push(`Hubo un error al cargar la imagen ${file.originalname}, revisa el archivo y cargala de nuevo`);
-      }
-    }
-
-    const message = errors.length > 0 ? 'Carga Realizada Parcialmente' : 'Fotos cargadas correctamente';
-
-    return { message, errors };
+    await this.photosRepository.save(newPhoto);
   }
 
+  async findAll(photoQueryDto: PhotoQueryDto) {
+    const { limit = 10, offset = 0 } = photoQueryDto;
+    const where = this.filters.buildWhere<Photo, PhotoQueryDto>(photoQueryDto, { like: ['code'] });
 
-  servePhoto(key: string, req: Request, res: Response) {
-    return serveFile(this.photos, key, { req, res, disposition: 'inline' });
+    const photos = await this.photosRepository.find({
+      take: limit,
+      skip: offset,
+      where
+    });
+
+    return photos;
   }
 
-  async update(key: string, file: any) {
-    try {
-      await this.photos.put(`${key}.jpg`, file.buffer, { contentType: file.mimetype });
-      return `Foto actualizada correctamente`;
-    } catch (error) {
-      this.logger.debug(error);
-      throw new InternalServerErrorException('Hubo un error al cargar la foto');
-    }
+  async findOne(id: string) {
+    const photo = await this.photosRepository.findOneBy({ id });
+    if (!photo) throw new NotFoundException(`La imágen con ID ${id} no existe`);
+    return photo;
   }
 
-  async remove(key: string) {
-    try {
-      await this.photos.delete(`${key}.jpg`);
+  async update(id: string, file: any) {
+    const photo = await this.findOne(id);
+    const url = `${photo.code}.jpg`
+    await this.photos.put(url, file.buffer, { contentType: file.mimetype });
+    return `Foto actualizada correctamente`;
+  }
 
-      return `Foto Eliminada correctamente`;
-    } catch (error) {
-      this.logger.debug(error);
-      throw new InternalServerErrorException('Hubo un error al cargar la foto');
-    }
+  async remove(id: string) {
+    const photo = await this.findOne(id);
+    await this.photos.delete(`${photo.code}.jpg`);
+    await this.photosRepository.delete({ id });
+    return `Foto Eliminada correctamente`;
+  }
+
+  async getPhotoByCode(code: string) {
+    const photo = await this.photosRepository.findOneBy({ code });
+
+    if (photo) throw new BadRequestException(`El código ${code} ya cuenta con foto asignada`);
   }
 
   async getBuffer(key: string) {
@@ -68,6 +84,31 @@ export class PhotosService {
 
       throw new InternalServerErrorException("Hubo un error al leer la foto");
     }
+  }
+
+  servePhoto(key: string, req: Request, res: Response) {
+    return serveFile(this.photos, key, { req, res, disposition: 'inline' });
+  }
+
+  async uploadFiles(files: any[], created_by: User) {
+    const errors: string[] = [];
+    this.validateFiles(files);
+
+    for (let i = 0; i <= files.length - 1; i++) {
+      const file = files[i];
+
+      try {
+        const fileName = file.originalname.split('.')[0].toUpperCase();
+        this.create({ code: fileName }, created_by, file);
+      } catch (error) {
+        this.logger.debug(error);
+        errors.push(`Hubo un error al cargar la imagen ${file.originalname}, revisa el archivo y cargala de nuevo`);
+      }
+    }
+
+    const message = errors.length > 0 ? 'Carga Realizada Parcialmente' : 'Fotos cargadas correctamente';
+
+    return { message, errors };
   }
 
   private validateFiles(files: any[]) {
