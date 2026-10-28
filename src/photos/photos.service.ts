@@ -7,6 +7,7 @@ import { Photo } from './entities/photo.entity.js';
 import { PhotoQueryDto } from './dto/photo-query.dto.js';
 import { Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity.js';
+import { paginate } from '../common/helpers/paginate.js';
 
 @Injectable()
 export class PhotosService {
@@ -38,13 +39,13 @@ export class PhotosService {
     const { limit = 10, offset = 0 } = photoQueryDto;
     const where = this.filters.buildWhere<Photo, PhotoQueryDto>(photoQueryDto, { like: ['code'] });
 
-    const photos = await this.photosRepository.find({
+    const [photos, total] = await this.photosRepository.findAndCount({
       take: limit,
       skip: offset,
       where
     });
 
-    return photos;
+    return paginate(photos, total, limit, offset);
   }
 
   async findOne(id: string) {
@@ -99,7 +100,7 @@ export class PhotosService {
 
       try {
         const fileName = file.originalname.split('.')[0].toUpperCase();
-        this.create({ code: fileName }, created_by, file);
+        await this.create({ code: fileName }, created_by, file);
       } catch (error) {
         this.logger.debug(error);
         errors.push(`Hubo un error al cargar la imagen ${file.originalname}, revisa el archivo y cargala de nuevo`);
