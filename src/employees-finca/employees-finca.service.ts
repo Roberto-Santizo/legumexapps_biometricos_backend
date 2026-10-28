@@ -40,7 +40,7 @@ export class EmployeesFincaService {
 
   async findAll(employeesFincasQueryDto: EmployeesFincasQueryDto) {
     const { limit = 10, offset = 0 } = employeesFincasQueryDto;
-    const where = this.filters.buildWhere<EmployeesFinca, EmployeesFincasQueryDto>(employeesFincasQueryDto, { like: ['first_name', 'last_name', 'position_id', 'emp_code'] });
+    const where = this.filters.buildWhere<EmployeesFinca, EmployeesFincasQueryDto>(employeesFincasQueryDto, { like: ['first_name', 'last_name', 'position_id', 'emp_code', 'department_id'] });
 
     const [employees, total] = await this.employeesFincaRepository.findAndCount({
       take: limit,

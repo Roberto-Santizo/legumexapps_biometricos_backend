@@ -36,4 +36,13 @@ export class EmployeesFincasQueryDto extends PaginationDto {
     @IsOptional()
     @Type(() => Number)
     position_id: number;
+    
+    @ApiPropertyOptional({
+        description: 'Filtro por ID del departamento del empleado',
+        type: Number,
+        example: 4,
+    })
+    @IsOptional()
+    @Type(() => Number)
+    department_id: number;
 }
