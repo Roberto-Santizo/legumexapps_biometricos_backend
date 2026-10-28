@@ -8,3 +8,12 @@ export interface EmployeeTransactionResourceInterface {
     name: string;
     pin: string;
 }
+
+export interface TransactionReportRow {
+    pin: string;
+    name: string;
+    last_name: string;
+    dept_name: string;
+    first_event_time: Date;
+    last_event_time: Date;
+}
