@@ -32,7 +32,7 @@ export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) { }
 
   @Post()
-  @Auth(ValidRoles.rrhh, ValidRoles.admin)
+  @Auth(ValidRoles.admin, ValidRoles.fincas)
   @ApiOperation({
     summary: 'Crear departamento',
     description: 'Crea un departamento en BioTime. Valida que no exista otro departamento con el mismo código y devuelve los datos enviados.',
@@ -46,7 +46,7 @@ export class DepartmentsController {
   }
 
   @Get()
-  @Auth(ValidRoles.rrhh, ValidRoles.admin)
+  @Auth(ValidRoles.admin, ValidRoles.fincas)
   @ApiOperation({
     summary: 'Listar departamentos',
     description: 'Devuelve los departamentos paginados, con filtro opcional por nombre (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
@@ -58,7 +58,7 @@ export class DepartmentsController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.rrhh, ValidRoles.admin)
+  @Auth(ValidRoles.admin, ValidRoles.fincas)
   @ApiOperation({ summary: 'Obtener departamento', description: 'Devuelve los datos de un departamento por su ID.' })
   @ApiParam({ name: 'id', type: Number, description: 'ID del departamento', example: 1 })
   @ApiOkResponse({ description: 'Departamento encontrado', type: Department })
@@ -69,7 +69,7 @@ export class DepartmentsController {
   }
 
   @Patch(':id')
-  @Auth(ValidRoles.rrhh, ValidRoles.admin)
+  @Auth(ValidRoles.admin, ValidRoles.fincas)
   @ApiOperation({ summary: 'Actualizar departamento', description: 'Actualiza parcialmente el nombre y/o código de un departamento.' })
   @ApiParam({ name: 'id', type: Number, description: 'ID del departamento', example: 1 })
   @ApiOkResponse({ description: 'Departamento actualizado', type: Department })
@@ -83,7 +83,7 @@ export class DepartmentsController {
   }
 
   @Delete(':id')
-  @Auth(ValidRoles.rrhh, ValidRoles.admin)
+  @Auth(ValidRoles.admin, ValidRoles.fincas)
   @ApiOperation({
     summary: 'Eliminar departamento',
     description: 'Elimina un departamento siempre que no tenga empleados asignados.',
