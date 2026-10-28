@@ -7,7 +7,7 @@ import { createStorageOptions } from './common/config/storage.config.js';
 import { EmployeesModule } from './employees/employees.module.js';
 import { InactiveEmployeesModule } from './inactive-employees/inactive-employees.module.js';
 import { Module } from '@nestjs/common';
-import { MSSQL_CONNECTION } from './common/constants/connections.js';
+import { MSSQL_CONNECTION, MSSQL_FINCAS_CONNECTION } from './common/constants/connections.js';
 import { StorageModule } from '@nestjs/storage';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module.js';
@@ -16,6 +16,11 @@ import { EmployeeTransactionsModule } from './employee-transactions/employee-tra
 import storage from './common/config/storage.js';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PhotosModule } from './photos/photos.module.js';
+import { EmployeesFincaModule } from './employees-finca/employees-finca.module.js';
+import { DepartmentsModule } from './departments/departments.module.js';
+import { BiometricsModule } from './biometrics/biometrics.module.js';
+import { PositionFincaModule } from './position-finca/position-finca.module.js';
+import { AreaFincaModule } from './area-finca/area-finca.module.js';
 
 @Module({
   imports: [
@@ -50,6 +55,21 @@ import { PhotosModule } from './photos/photos.module.js';
         trustServerCertificate: true,
       },
     }),
+    TypeOrmModule.forRoot({
+      name: MSSQL_FINCAS_CONNECTION,
+      type: 'mssql',
+      host: process.env.MSSQL_FINCAS_HOST,
+      port: +(process.env.MSSQL_FINCAS_PORT ?? 1433),
+      database: process.env.MSSQL_FINCAS_NAME,
+      username: process.env.MSSQL_FINCAS_USERNAME,
+      password: process.env.MSSQL_FINCAS_PASSWORD,
+      autoLoadEntities: true,
+      synchronize: false,
+      options: {
+        encrypt: false,
+        trustServerCertificate: true,
+      },
+    }),
     CommonModule,
     AuthModule,
     UsersModule,
@@ -60,6 +80,11 @@ import { PhotosModule } from './photos/photos.module.js';
     TasksModule,
     EmployeeTransactionsModule,
     PhotosModule,
+    EmployeesFincaModule,
+    DepartmentsModule,
+    BiometricsModule,
+    PositionFincaModule,
+    AreaFincaModule,
   ],
 })
 export class AppModule { }

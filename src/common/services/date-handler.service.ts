@@ -11,8 +11,10 @@ export class DateHandlerService implements DateHandler {
         return format(new TZDate(date, TIME_ZONE), 'dd-MM-yyyy HH:mm:ss');
     }
 
-    getCurrentDate(): Date {
+    getCurrentDate(): Date;
+    getCurrentDate(pattern: string): string;
+    getCurrentDate(pattern?: string): Date | string {
         const now = new TZDate(new Date(), TIME_ZONE);
-        return now;
+        return pattern ? format(now, pattern) : now;
     }
 }

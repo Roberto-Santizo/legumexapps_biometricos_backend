@@ -18,7 +18,6 @@ import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
-import type { Request, Response } from 'express';
 
 @Injectable()
 export class EmployeesService {

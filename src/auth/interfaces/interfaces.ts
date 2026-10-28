@@ -21,5 +21,6 @@ export interface JwtPayload {
 export enum ValidRoles {
     admin = 'admin',
     rrhh = 'rrhh',
-    user = 'user'
+    fincas = 'fincas',
+    user = 'user',
 }
