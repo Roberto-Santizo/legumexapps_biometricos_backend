@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module.js';
 import { AreaFincaService } from './area-finca.service.js';
 import { AreaFincaController } from './area-finca.controller.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,7 +11,8 @@ import { AreaFincaEmployee } from './entities/area-finca-employee.js';
   controllers: [AreaFincaController],
   providers: [AreaFincaService],
   imports: [
-    TypeOrmModule.forFeature([AreaFinca, AreaFincaEmployee], MSSQL_FINCAS_CONNECTION)
+    TypeOrmModule.forFeature([AreaFinca, AreaFincaEmployee], MSSQL_FINCAS_CONNECTION),
+    AuthModule,
   ]
 })
 export class AreaFincaModule { }

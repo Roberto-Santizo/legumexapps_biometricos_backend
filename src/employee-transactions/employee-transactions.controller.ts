@@ -1,23 +1,34 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { EmployeeTransactionsService } from './employee-transactions.service.js';
 import { EmployeeTransactionQueryDto } from './dto/employee-transaction-query.dto.js';
 import { EmployeeTransaction } from './entities/employee-transaction.entity.js';
 import { GenerateTransactionsReportDto } from './dto/generate-transactions-report.dto.js';
+import { Auth } from '../auth/decorators/auth.decorator.js';
+import { ValidRoles } from '../auth/interfaces/interfaces.js';
 
 @ApiTags('Transacciones de empleados')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({
+  description: 'Token ausente o inválido ("Token not valid") o el usuario no está activo ("User is not active")',
+})
+@ApiForbiddenResponse({ description: 'El usuario autenticado no tiene el rol admin o rrhh ("Unauthorized")' })
 @Controller('employee-transactions')
 export class EmployeeTransactionsController {
   constructor(private readonly employeeTransactionsService: EmployeeTransactionsService) { }
 
   @Get()
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Listar transacciones de empleados',
     description: 'Devuelve las transacciones de empleados paginadas, con filtros opcionales por pin, nombre, apellidos, código y nombre de departamento (búsqueda parcial) y fecha del evento. La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
@@ -32,6 +43,7 @@ export class EmployeeTransactionsController {
   }
 
   @Post('report')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Generar reporte de transacciones',
     description: 'Genera un archivo Excel (hoja "Marcajes" con nombre, código, posición, departamento y marcaje) con las transacciones cuyo event_time está entre start_date y el final del día de end_date. El rango no puede superar una semana. El archivo se devuelve como un Buffer serializado en JSON.',

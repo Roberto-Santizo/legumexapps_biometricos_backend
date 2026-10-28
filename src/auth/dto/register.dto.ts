@@ -32,7 +32,7 @@ export class RegisterDto {
     password: string;
 
     @ApiPropertyOptional({
-        description: 'Roles del usuario (admin, rrhh, user). Por defecto: ["user"]',
+        description: 'Roles del usuario (admin, rrhh, fincas, user). Por defecto: ["user"]',
         type: [String],
         example: ['user'],
     })

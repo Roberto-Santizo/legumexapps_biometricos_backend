@@ -26,7 +26,7 @@ import { ValidRoles } from '../auth/interfaces/interfaces.js';
 @ApiUnauthorizedResponse({
   description: 'Token ausente o inválido ("Token not valid") o el usuario no está activo ("User is not active")',
 })
-@ApiForbiddenResponse({ description: 'El usuario autenticado no tiene el rol admin o rrhh ("Unauthorized")' })
+@ApiForbiddenResponse({ description: 'El usuario autenticado no tiene el rol admin o fincas ("Unauthorized")' })
 @Controller('departments')
 export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) { }
