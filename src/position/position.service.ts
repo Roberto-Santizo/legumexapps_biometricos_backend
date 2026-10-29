@@ -11,6 +11,7 @@ import { PositionQueryDto } from './dto/position-query.dto.js';
 import { Repository } from 'typeorm';
 import { UpdatePositionDto } from './dto/update-position.dto.js';
 import { User } from '../auth/entities/user.entity.js';
+import { PositionResource } from './resources/position.resource.js';
 
 @Injectable()
 export class PositionService {
@@ -52,10 +53,16 @@ export class PositionService {
       where
     });
 
-    return paginate(positions, total, limit, offset);
+    return paginate(PositionResource.collection(positions), total, limit, offset);
   }
 
   async findOne(id: string) {
+    const position = await this.positionRepository.findOneBy({ id });
+    if (!position) throw new NotFoundException(`La posición con ID ${id} no existe`);
+    return PositionResource.positionResource(position);
+  }
+
+  async findOneRaw(id: string) {
     const position = await this.positionRepository.findOneBy({ id });
     if (!position) throw new NotFoundException(`La posición con ID ${id} no existe`);
     return position;
@@ -67,7 +74,12 @@ export class PositionService {
   }
 
   async update(id: string, updatePositionDto: UpdatePositionDto) {
-    const position = await this.findOne(id);
+    if(updatePositionDto.code){
+      const exists = await this.findOneByCode(updatePositionDto.code);
+      if(exists) throw new BadRequestException(`Ya existe una posición con el código ${updatePositionDto.code}`);
+    }
+
+    const position = await this.findOneRaw(id);
     if (position.employee != null) throw new BadRequestException(`La posición ${position.code} cuenta con un empleado asignado, no se puede actualizar`);
     position.code = updatePositionDto.code;
     position.name = updatePositionDto.name;
