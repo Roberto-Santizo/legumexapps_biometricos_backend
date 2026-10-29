@@ -11,6 +11,7 @@ import { TasksService } from './tasks.service.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PhotosModule } from '../photos/photos.module.js';
 import { InactiveEmployeesModule } from '../inactive-employees/inactive-employees.module.js';
+import { PositionModule } from '../position/position.module.js';
 
 @Module({
   controllers: [TasksController],
@@ -24,7 +25,8 @@ import { InactiveEmployeesModule } from '../inactive-employees/inactive-employee
     CommonModule,
     EmployeesModule,
     InactiveEmployeesModule,
-    PhotosModule
+    PhotosModule,
+    PositionModule
   ]
 })
 export class TasksModule {}

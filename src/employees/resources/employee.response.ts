@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { EmployeeList } from "../interfaces/interfaces.js";
 
 export class EmployeeListResponse implements EmployeeList {
@@ -26,11 +26,18 @@ export class EmployeeListResponse implements EmployeeList {
     })
     pin: string;
 
-     @ApiProperty({
-        description: 'Posición del empleado en ZKBioAccess',
-        example: '1PROGRA001',
+    @ApiProperty({
+        description: 'Código de la posición asignada al empleado ("Sin posición asignada" si no tiene)',
+        example: 'POS-001',
     })
     position: string;
+
+    @ApiPropertyOptional({
+        description: 'ID de la posición asignada al empleado (null si no tiene)',
+        example: '4028898594b7f9660194b7fb5d7a0600',
+        nullable: true,
+    })
+    position_id?: string;
 
     @ApiProperty({
         description: 'Nombre del usuario que creó el registro',
@@ -52,7 +59,7 @@ export class EmployeeListResponse implements EmployeeList {
    
     @ApiProperty({
         description: 'Código del departamento del empleado',
-        example: 'Producción',
+        example: 'PROD01',
     })
     departmentCode: string;
 
@@ -64,7 +71,7 @@ export class EmployeeListResponse implements EmployeeList {
     
     @ApiProperty({
         description: 'URL de la fotografía del empleado (cadena vacía si no tiene)',
-        example: 'http://localhost:3000/api/employees/photos/10045.jpg',
+        example: 'http://localhost:3000/api/photos/10045.jpg',
     })
     photoUrl: string;
 }

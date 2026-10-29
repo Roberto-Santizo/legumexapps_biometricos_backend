@@ -87,4 +87,20 @@ export class PositionService {
     await this.positionRepository.save(position);
     return position;
   }
+
+  async validatePosition(positionId: string, employeeId?: string) {
+    const position = await this.findOneRaw(positionId);
+    this.validateAvailability(position, employeeId);
+    return position;
+  }
+
+  async findOneRawByCode(code: string) {
+    const position = await this.findOneByCode(code);
+    if (!position) throw new NotFoundException(`La posición con código ${code} no existe`);
+    return position;
+  }
+
+  private validateAvailability(position: Position, employeeId?: string) {
+    if (position.employee && position.employee.id !== employeeId) throw new BadRequestException(`La posición ${position.code} ya cuenta con un empleado asignado`);
+  }
 }

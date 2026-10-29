@@ -10,4 +10,5 @@ export interface EmployeeList {
     hasPhoto: boolean;
     photoUrl: string;
     position: string;
+    position_id?: string;
 }

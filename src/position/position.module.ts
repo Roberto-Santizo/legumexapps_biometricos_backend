@@ -14,6 +14,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     TypeOrmModule.forFeature([Position], MSSQL_CONNECTION),
     AuthModule,
     CommonModule
-  ]
+  ],
+  exports: [PositionService]
 })
 export class PositionModule { }

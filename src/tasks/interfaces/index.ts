@@ -4,6 +4,7 @@ export interface CreationPayload {
     lastName: string;
     deptCode: string;
     accLevelIds: string;
+    position_id: string;
     accStartTime?: string;
     accEndTime?: string;
 }
@@ -13,6 +14,7 @@ export interface MovementPayload {
     name: string;
     lastName: string;
     position: string;
+    position_id: string;
     deptCode: string;
     accLevelIds: string;
 }

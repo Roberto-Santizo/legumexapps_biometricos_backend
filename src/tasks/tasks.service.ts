@@ -10,6 +10,7 @@ import { Filters } from '../common/providers/filters.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { paginate } from '../common/helpers/paginate.js';
+import { PositionService } from '../position/position.service.js';
 import { Task, TaskTypeEnum } from './entities/task.entity.js';
 import { TaskPayload } from './interfaces/index.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
@@ -33,6 +34,8 @@ export class TasksService {
 
     @Inject()
     private readonly employeeService: EmployeesService,
+
+    private readonly positionService: PositionService,
 
     private readonly idGenerator: IdGeneratorService,
     private readonly databaseHelpers: DatabaseHelpers,
@@ -142,7 +145,9 @@ export class TasksService {
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const { deptCode, accLevelName, position, name, code, scheduledAt } = getCreationTaskRowValues(worksheet.getRow(rowNumber));
       const { department, accLevel } = await this.validateCreationFields(deptCode, accLevelName);
-      const payload = createNewTaskPayload(name, position, code, department.code, accLevel.id)
+      // La disponibilidad de la posición se valida al ejecutar la tarea
+      const positionEntity = await this.positionService.findOneRawByCode(String(position));
+      const payload = createNewTaskPayload(name, position, code, department.code, accLevel.id, positionEntity.id)
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.creation, user, queryRunner);
     }
 
@@ -155,7 +160,9 @@ export class TasksService {
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const { deptCode, accLevelName, position, code, scheduledAt } = getMovementTaskRowValues(worksheet.getRow(rowNumber));
       const { department, accLevel, employee } = await this.validateMovementFields(deptCode, accLevelName, code);
-      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, employee.name, employee.last_name);
+      // La disponibilidad de la posición se valida al ejecutar la tarea
+      const positionEntity = await this.positionService.findOneRawByCode(String(position));
+      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, employee.name, employee.last_name, positionEntity.id);
       const previous = formatEmployeeEntity(employee);
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.movement, user, queryRunner, previous);
     }
