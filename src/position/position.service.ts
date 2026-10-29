@@ -87,4 +87,10 @@ export class PositionService {
     await this.positionRepository.save(position);
     return position;
   }
+
+  async validatePosition(positionId: string, employeeId?: string) {
+    const position = await this.findOneRaw(positionId);
+    if (position.employee && position.employee.id !== employeeId) throw new BadRequestException(`La posición ${position.code} ya cuenta con un empleado asignado`);
+    return position;
+  }
 }

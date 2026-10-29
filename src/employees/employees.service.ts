@@ -12,12 +12,14 @@ import { Filters } from '../common/providers/filters.js';
 import { paginate } from '../common/helpers/paginate.js';
 import { imageToBase64 } from '../common/helpers/base-64-enconder.js';
 import { inactivateEmployeeEmail } from '../common/emails/inactivate-employee.email.js';
-import { InjectDisk, serveFile, StorageDisk } from '@nestjs/storage';
+import { InjectDisk, StorageDisk } from '@nestjs/storage';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
+import { PositionService } from '../position/position.service.js';
+import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 
 @Injectable()
 export class EmployeesService {
@@ -33,6 +35,7 @@ export class EmployeesService {
     private readonly dateHandler: DateHandlerService,
     private readonly zkBioaccessService: ZkBioaccessService,
     private readonly emailService: EmailService,
+    private readonly positionService: PositionService,
 
     @InjectDisk('photos')
     private readonly photos: StorageDisk,
@@ -40,17 +43,41 @@ export class EmployeesService {
 
   async create(createEmployeeDto: CreateEmployeeDto, file: any) {
     try {
-      const base64 = file ? imageToBase64(file) : undefined;
-      const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, base64);
-      if (!flag && file) throw new BadRequestException("Hubo un error al guardar la foto del empleado, asegurese que el rostro aparezca dentro de la misma");
-      if (file) await this.photos.put(`${createEmployeeDto.pin}.jpg`, file.buffer, { contentType: file.mimetype });
-      return 'Empleado Creado/Actulizado Correctamente';
+      const exists = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
+      if (exists) throw new BadRequestException(`El empleado con código ${createEmployeeDto.pin} ya existe`);
+
+      const position = await this.positionService.validatePosition(createEmployeeDto.position_id);
+
+      await this.saveInZkBioaccess(createEmployeeDto, file);
+
+      const employee = await this.findOneByPin(createEmployeeDto.pin);
+      await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+
+      return 'Empleado Creado Correctamente';
     } catch (error) {
       if (error instanceof HttpException) throw error;
       console.log(error);
       throw new InternalServerErrorException('Hubo un error');
     }
+  }
 
+  async update(id: string, updateEmployeeDto: UpdateEmployeeDto, file: any) {
+    try {
+      const employee = await this.employeeRepository.findOneBy({ id });
+      if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
+
+      const position = await this.positionService.validatePosition(updateEmployeeDto.position_id, employee.id);
+
+      await this.saveInZkBioaccess({ ...updateEmployeeDto, pin: employee.pin }, file);
+
+      await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+
+      return 'Empleado Actualizado Correctamente';
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      console.log(error);
+      throw new InternalServerErrorException('Hubo un error');
+    }
   }
 
   async findAll(employeesQueryDto: EmployeesQueryDto) {
@@ -121,5 +148,12 @@ export class EmployeesService {
     } catch (error) {
       this.databaseHelpers.handleExeptions(error);
     }
+  }
+
+  private async saveInZkBioaccess(createEmployeeDto: CreateEmployeeDto, file: any) {
+    const base64 = file ? imageToBase64(file) : undefined;
+    const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, base64);
+    if (!flag && file) throw new BadRequestException("Hubo un error al guardar la foto del empleado, asegurese que el rostro aparezca dentro de la misma");
+    if (file) await this.photos.put(`${createEmployeeDto.pin}.jpg`, file.buffer, { contentType: file.mimetype });
   }
 }

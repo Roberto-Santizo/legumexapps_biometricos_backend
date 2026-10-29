@@ -1,5 +1,5 @@
 import { CreationPayload, InactivatePayload, MovementPayload } from '../interfaces/index.js';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { DateHandlerService } from '../../common/services/date-handler.service.js';
 import { imageBufferToBase64 } from '../../common/helpers/base-64-enconder.js';
 import { In, Repository } from 'typeorm';
@@ -69,6 +69,7 @@ export class CronService {
                 accLevelIds: data.accLevelIds,
                 name: data.name,
                 lastName: data.lastName,
+                position_id: 'asdsd'
             });
 
             if (flag) taskStatus = TaskStatusEnum.completed;
@@ -121,6 +122,7 @@ export class CronService {
                 lastName: data.lastName,
                 deptCode: data.deptCode,
                 accLevelIds: data.accLevelIds,
+                position_id: 'asdasd'
             }, imageBufferToBase64(image));
 
             taskStatus = TaskStatusEnum.completed;

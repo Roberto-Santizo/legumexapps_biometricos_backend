@@ -1,5 +1,5 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Body, Param, Query, UseInterceptors, UploadedFile, BadRequestException, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseInterceptors, UploadedFile, BadRequestException, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import {
     ApiBadRequestResponse,
@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
+import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 import { EmployeesQueryDto } from './dto/employees-query.dto.js';
 import { EmployeesService } from './employees.service.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
@@ -43,21 +44,22 @@ export class EmployeesController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
   @ApiOperation({
-    summary: 'Crear o actualizar empleado',
-    description: 'Envía el empleado junto con su foto (personPhoto) a la API de ZKBioAccess (/person/add), que lo crea o lo actualiza si el PIN ya existe, y guarda la foto en el almacenamiento de fotos como <pin>.jpg.',
+    summary: 'Crear empleado',
+    description: 'Valida que el PIN no exista y que la posición exista y no tenga empleado asignado, envía el empleado junto con su foto (personPhoto) a la API de ZKBioAccess (/person/add), asigna la posición y guarda la foto en el almacenamiento de fotos como <pin>.jpg.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'Datos del empleado e imagen (jpg, jpeg, png o gif)',
     schema: {
       type: 'object',
-      required: ['name', 'lastName', 'pin', 'deptCode', 'accLevelIds', 'file'],
+      required: ['name', 'lastName', 'pin', 'deptCode', 'accLevelIds', 'position_id', 'file'],
       properties: {
         name: { type: 'string', minLength: 10, example: 'Juan Carlos' },
         lastName: { type: 'string', minLength: 5, example: 'Pérez López' },
         pin: { type: 'string', minLength: 5, example: '10045' },
         deptCode: { type: 'string', example: 'PROD01' },
         accLevelIds: { type: 'string', minLength: 10, example: '4028898594b7f9660194b7fb5d7a0430' },
+        position_id: { type: 'string', example: '4028898594b7f9660194b7fb5d7a0600' },
         accStartTime: { type: 'string', example: '2026-10-15 08:00:00' },
         accEndTime: { type: 'string', example: '2027-10-15 18:00:00' },
         file: { type: 'string', format: 'binary' },
@@ -76,6 +78,52 @@ export class EmployeesController {
   })
   create(@UploadedFile() file: any, @Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeesService.create(createEmployeeDto, file);
+  }
+
+  @Patch(':id')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
+  @ApiOperation({
+    summary: 'Actualizar empleado',
+    description: 'Valida que la posición exista y no tenga otro empleado asignado, envía el empleado (con el PIN existente) a ZKBioAccess (/person/add) y asigna la posición. Si se envía foto, se guarda como <pin>.jpg.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'ID del empleado (32 caracteres)',
+    example: '4028898594b7f9660194b7fb5d7a0500',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Datos del empleado e imagen opcional (jpg, jpeg, png o gif)',
+    schema: {
+      type: 'object',
+      required: ['name', 'lastName', 'deptCode', 'accLevelIds', 'position_id'],
+      properties: {
+        name: { type: 'string', minLength: 10, example: 'Juan Carlos' },
+        lastName: { type: 'string', minLength: 5, example: 'Pérez López' },
+        deptCode: { type: 'string', example: 'PROD01' },
+        accLevelIds: { type: 'string', minLength: 10, example: '4028898594b7f9660194b7fb5d7a0430' },
+        position_id: { type: 'string', example: '4028898594b7f9660194b7fb5d7a0600' },
+        accStartTime: { type: 'string', example: '2026-10-15 08:00:00' },
+        accEndTime: { type: 'string', example: '2027-10-15 18:00:00' },
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description: 'Empleado actualizado correctamente',
+    schema: { type: 'string', example: 'Empleado Actualizado Correctamente' },
+  })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos, la posición ya cuenta con otro empleado asignado, o ZKBioAccess rechazó la foto porque no se detectó el rostro',
+  })
+  @ApiNotFoundResponse({ description: 'El empleado o la posición no existen' })
+  @ApiInternalServerErrorResponse({
+    description: 'Error al comunicarse con ZKBioAccess o al actualizar el empleado',
+  })
+  update(@Param('id') id: string, @UploadedFile() file: any, @Body() updateEmployeeDto: UpdateEmployeeDto) {
+    return this.employeesService.update(id, updateEmployeeDto, file);
   }
 
   @Get()

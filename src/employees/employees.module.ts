@@ -9,6 +9,7 @@ import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccLevelModule } from '../acc-level/acc-level.module.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
+import { PositionModule } from '../position/position.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ZkBioaccessService } from './services/zkbioaccess.service.js';
     AuthDepartmentModule,
     AuthModule,
     CommonModule,
+    PositionModule
   ],
   controllers: [EmployeesController],
   providers: [EmployeesService, ZkBioaccessService],
