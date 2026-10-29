@@ -1,6 +1,7 @@
 import { CreationPayload, InactivatePayload, MovementPayload } from '../interfaces/index.js';
 import { Cron } from '@nestjs/schedule';
 import { DateHandlerService } from '../../common/services/date-handler.service.js';
+import { EmployeesService } from '../../employees/employees.service.js';
 import { imageBufferToBase64 } from '../../common/helpers/base-64-enconder.js';
 import { In, Repository } from 'typeorm';
 import { InactiveEmployee } from '../../inactive-employees/entities/inactive-employee.entity.js';
@@ -25,6 +26,7 @@ export class CronService {
 
         @Inject()
         private readonly zbioaccessService: ZkBioaccessService,
+        private readonly employeesService: EmployeesService,
         private readonly photosService: PhotosService,
 
         private readonly dateService: DateHandlerService
@@ -63,13 +65,13 @@ export class CronService {
 
         try {
             const data = task.payload as MovementPayload;
-            const flag = await this.zbioaccessService.createOrUpdateEmployee({
+            const flag = await this.employeesService.createOrUpdateWithPosition({
                 pin: data.pin,
                 deptCode: data.deptCode,
                 accLevelIds: data.accLevelIds,
                 name: data.name,
                 lastName: data.lastName,
-                position_id: 'asdsd'
+                position_id: data.position_id
             });
 
             if (flag) taskStatus = TaskStatusEnum.completed;
@@ -116,13 +118,13 @@ export class CronService {
 
             const image = await this.photosService.getBuffer(task.pin);
 
-            await this.zbioaccessService.createOrUpdateEmployee({
+            await this.employeesService.createOrUpdateWithPosition({
                 pin: data.pin,
                 name: data.name,
                 lastName: data.lastName,
                 deptCode: data.deptCode,
                 accLevelIds: data.accLevelIds,
-                position_id: 'asdasd'
+                position_id: data.position_id
             }, imageBufferToBase64(image));
 
             taskStatus = TaskStatusEnum.completed;

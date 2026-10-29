@@ -37,12 +37,12 @@ export const getInactivationTaskRowValues = (row: ExcelJS.Row) => {
     return { code, scheduledAt }
 }
 
-export const createNewTaskPayload = (name: string, lastName: string, pin: string, deptCode: string, accLevelIds: string): CreationPayload => {
-    return { name, lastName, pin, deptCode, accLevelIds };
+export const createNewTaskPayload = (name: string, lastName: string, pin: string, deptCode: string, accLevelIds: string, position_id: string): CreationPayload => {
+    return { name, lastName, pin, deptCode, accLevelIds, position_id };
 }
 
-export const createNewTaskMovementPayload = (position: string, pin: string, deptCode: string, accLevelIds: string, name: string, lastName: string): MovementPayload => {
-    return { pin, deptCode, accLevelIds, position, name, lastName };
+export const createNewTaskMovementPayload = (position: string, pin: string, deptCode: string, accLevelIds: string, name: string, lastName: string, position_id: string): MovementPayload => {
+    return { pin, deptCode, accLevelIds, position, name, lastName, position_id };
 }
 
 export const createNewTaskInactivationPayload = (code: string, scheduledAt: string): InactivatePayload => {
@@ -57,6 +57,7 @@ export const formatEmployeeEntity = (employee: Employee): Record<string, unknown
     return {
         'code': employee.pin,
         'position': employee.last_name,
+        'position_id': employee.position_id ?? null,
         'department': employee.authDepartment.name,
         'deptCode': employee.authDepartment.code
     }

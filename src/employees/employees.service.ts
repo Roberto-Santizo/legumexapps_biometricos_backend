@@ -80,6 +80,19 @@ export class EmployeesService {
     }
   }
 
+  // Usado por las tareas programadas: la posición se vuelve a validar al momento de ejecutar
+  async createOrUpdateWithPosition(createEmployeeDto: CreateEmployeeDto, image?: string) {
+    const current = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
+    const position = await this.positionService.validatePosition(createEmployeeDto.position_id, current?.id);
+
+    const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, image);
+
+    const employee = current ?? await this.findOneByPin(createEmployeeDto.pin);
+    await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+
+    return flag;
+  }
+
   async findAll(employeesQueryDto: EmployeesQueryDto) {
     const { limit = 10, offset = 0 } = employeesQueryDto;
     const where = this.filters.buildWhere<Employee, EmployeesQueryDto>(employeesQueryDto, { like: ['name'] });

@@ -26,7 +26,7 @@ export class Task {
         description: 'Datos a enviar a ZKBioAccess según el tipo de tarea',
         type: 'object',
         additionalProperties: true,
-        example: { pin: '10045', position: 'Operario', deptCode: 'PROD01', accLevelIds: '4028898594b7f9660194b7fb5d7a0430' },
+        example: { pin: '10045', position: 'POS-001', position_id: '4028898594b7f9660194b7fb5d7a0600', deptCode: 'PROD01', accLevelIds: '4028898594b7f9660194b7fb5d7a0430' },
     })
     @Column('jsonb') payload: TaskPayload;
 
@@ -35,7 +35,7 @@ export class Task {
         type: 'object',
         additionalProperties: true,
         nullable: true,
-        example: { code: '10045', position: 'Ayudante', department: 'Producción', deptCode: 'PROD01' },
+        example: { code: '10045', position: 'Ayudante', position_id: '4028898594b7f9660194b7fb5d7a0601', department: 'Producción', deptCode: 'PROD01' },
     })
     @Column('jsonb', { nullable: true }) previous: Record<string, unknown> | null;
 

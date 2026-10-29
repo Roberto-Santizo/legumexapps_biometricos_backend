@@ -90,7 +90,18 @@ export class PositionService {
 
   async validatePosition(positionId: string, employeeId?: string) {
     const position = await this.findOneRaw(positionId);
-    if (position.employee && position.employee.id !== employeeId) throw new BadRequestException(`La posición ${position.code} ya cuenta con un empleado asignado`);
+    this.validateAvailability(position, employeeId);
     return position;
+  }
+
+  async validatePositionByCode(code: string, employeeId?: string) {
+    const position = await this.findOneByCode(code);
+    if (!position) throw new NotFoundException(`La posición con código ${code} no existe`);
+    this.validateAvailability(position, employeeId);
+    return position;
+  }
+
+  private validateAvailability(position: Position, employeeId?: string) {
+    if (position.employee && position.employee.id !== employeeId) throw new BadRequestException(`La posición ${position.code} ya cuenta con un empleado asignado`);
   }
 }

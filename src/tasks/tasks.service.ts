@@ -10,6 +10,7 @@ import { Filters } from '../common/providers/filters.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { paginate } from '../common/helpers/paginate.js';
+import { PositionService } from '../position/position.service.js';
 import { Task, TaskTypeEnum } from './entities/task.entity.js';
 import { TaskPayload } from './interfaces/index.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
@@ -33,6 +34,8 @@ export class TasksService {
 
     @Inject()
     private readonly employeeService: EmployeesService,
+
+    private readonly positionService: PositionService,
 
     private readonly idGenerator: IdGeneratorService,
     private readonly databaseHelpers: DatabaseHelpers,
@@ -139,10 +142,13 @@ export class TasksService {
   private async createTaskCreation(filename: string, user: User, queryRunner: QueryRunner, worksheet: ExcelJS.Worksheet) {
     const batch = this.idGenerator.generate32CaracterId();
 
+    const usedPositions = new Set<string>();
+
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const { deptCode, accLevelName, position, name, code, scheduledAt } = getCreationTaskRowValues(worksheet.getRow(rowNumber));
       const { department, accLevel } = await this.validateCreationFields(deptCode, accLevelName);
-      const payload = createNewTaskPayload(name, position, code, department.code, accLevel.id)
+      const positionEntity = await this.validateTaskPosition(String(position), usedPositions);
+      const payload = createNewTaskPayload(name, position, code, department.code, accLevel.id, positionEntity.id)
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.creation, user, queryRunner);
     }
 
@@ -152,10 +158,13 @@ export class TasksService {
   private async createTaskMovement(filename: string, user: User, queryRunner: QueryRunner, worksheet: ExcelJS.Worksheet) {
     const batch = this.idGenerator.generate32CaracterId();
 
+    const usedPositions = new Set<string>();
+
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const { deptCode, accLevelName, position, code, scheduledAt } = getMovementTaskRowValues(worksheet.getRow(rowNumber));
       const { department, accLevel, employee } = await this.validateMovementFields(deptCode, accLevelName, code);
-      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, employee.name, employee.last_name);
+      const positionEntity = await this.validateTaskPosition(String(position), usedPositions, employee.id);
+      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, employee.name, employee.last_name, positionEntity.id);
       const previous = formatEmployeeEntity(employee);
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.movement, user, queryRunner, previous);
     }
@@ -203,6 +212,14 @@ export class TasksService {
     if (!employee) throw new NotFoundException(`El empleado con código ${code} no existe`);
 
     return { department, accLevel, employee }
+  }
+
+  // La posición debe existir, estar libre (o ser del mismo empleado) y no repetirse en el archivo
+  private async validateTaskPosition(positionCode: string, usedPositions: Set<string>, employeeId?: string) {
+    const position = await this.positionService.validatePositionByCode(positionCode, employeeId);
+    if (usedPositions.has(position.id)) throw new BadRequestException(`La posición ${position.code} está asignada a más de un empleado en el archivo`);
+    usedPositions.add(position.id);
+    return position;
   }
 
   private async validateInactivationFields(code: string) {
