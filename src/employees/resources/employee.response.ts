@@ -26,6 +26,12 @@ export class EmployeeListResponse implements EmployeeList {
     })
     pin: string;
 
+     @ApiProperty({
+        description: 'Posición del empleado en ZKBioAccess',
+        example: '1PROGRA001',
+    })
+    position: string;
+
     @ApiProperty({
         description: 'Nombre del usuario que creó el registro',
         example: 'Juan Pérez López',

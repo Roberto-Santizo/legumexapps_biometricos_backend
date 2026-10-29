@@ -9,4 +9,5 @@ export interface EmployeeList {
     departmentCode: string;
     hasPhoto: boolean;
     photoUrl: string;
+    position: string;
 }

@@ -61,6 +61,7 @@ export class EmployeesService {
       take: limit,
       skip: offset,
       where,
+      relations: { position: true }
     });
 
     return paginate(EmployeeResource.collection(employees), total, limit, offset);
@@ -72,7 +73,7 @@ export class EmployeesService {
   }
 
   async findOne(id: string) {
-    const employee = await this.employeeRepository.findOneBy({ id });
+    const employee = await this.employeeRepository.findOne({ where: { id }, relations: { position: true } });
 
     if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
 
