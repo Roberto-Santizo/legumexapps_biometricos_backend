@@ -19,7 +19,8 @@ export class EmployeeResource {
             department: employee.authDepartment.name,
             departmentCode: employee.authDepartment.code,
             hasPhoto: hasPhoto,
-            photoUrl: hasPhoto ? this.getPhotoUrl(employee.pin) : ''
+            photoUrl: hasPhoto ? this.getPhotoUrl(employee.pin) : '',
+            position: employee.position ? employee.position.code : 'Sin posición asignada',
         };
     }
 

@@ -1,7 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
-import { AuthDepartment } from '../../auth-department/entities/auth-department.entity.js';
 import { AccLevelEmployee } from '../../acc-level/entities/acc_level_employee.js';
+import { ApiProperty } from '@nestjs/swagger';
+import { AuthDepartment } from '../../auth-department/entities/auth-department.entity.js';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { Position } from '../../position/entities/position.entity.js';
 
 @Entity('pers_person')
 export class Employee {
@@ -43,6 +44,9 @@ export class Employee {
   @Column()
   auth_dept_id: string;
 
+  @Column()
+  position_id?: string;
+
   @ApiProperty({
     description: 'Indica si la credencial está habilitada (1) o no (0)',
     example: 1,
@@ -70,7 +74,7 @@ export class Employee {
   })
   @Column('integer')
   status: number;
-  
+
   @ApiProperty({
     description: 'Tipo de persona en ZKBioAccess',
     example: 0,
@@ -151,4 +155,11 @@ export class Employee {
   )
 
   accLevelEmployee: AccLevelEmployee[];
+
+  @OneToOne(
+    () => Position,
+    position => position.employee,
+  )
+  @JoinColumn({ name: 'position_id' })
+  position?: Position;
 }
