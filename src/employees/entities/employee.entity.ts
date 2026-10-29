@@ -1,5 +1,5 @@
 import { AccLevelEmployee } from '../../acc-level/entities/acc_level_employee.js';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AuthDepartment } from '../../auth-department/entities/auth-department.entity.js';
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 import { Position } from '../../position/entities/position.entity.js';
@@ -44,6 +44,10 @@ export class Employee {
   @Column()
   auth_dept_id: string;
 
+  @ApiPropertyOptional({
+    description: 'ID de la posición asignada al empleado',
+    example: '4028898594b7f9660194b7fb5d7a0600',
+  })
   @Column()
   position_id?: string;
 
@@ -156,6 +160,10 @@ export class Employee {
 
   accLevelEmployee: AccLevelEmployee[];
 
+  @ApiPropertyOptional({
+    description: 'Posición asignada al empleado',
+    type: () => Position,
+  })
   @OneToOne(
     () => Position,
     position => position.employee,

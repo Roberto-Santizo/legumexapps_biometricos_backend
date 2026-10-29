@@ -21,6 +21,7 @@ export class EmployeeResource {
             hasPhoto: hasPhoto,
             photoUrl: hasPhoto ? this.getPhotoUrl(employee.pin) : '',
             position: employee.position ? employee.position.code : 'Sin posición asignada',
+            position_id: employee.position_id
         };
     }
 

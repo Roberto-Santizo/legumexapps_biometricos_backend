@@ -45,14 +45,14 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
   @ApiOperation({
     summary: 'Crear empleado',
-    description: 'Valida que el PIN no exista y que la posición exista y no tenga empleado asignado, envía el empleado junto con su foto (personPhoto) a la API de ZKBioAccess (/person/add), asigna la posición y guarda la foto en el almacenamiento de fotos como <pin>.jpg.',
+    description: 'Valida que el PIN no exista y que la posición exista y no tenga empleado asignado, envía el empleado a la API de ZKBioAccess (/person/add) y le asigna la posición. Si se envía foto, se incluye como personPhoto y se guarda en el almacenamiento de fotos como <pin>.jpg; un archivo que no sea imagen se ignora.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Datos del empleado e imagen (jpg, jpeg, png o gif)',
+    description: 'Datos del empleado e imagen opcional (jpg, jpeg, png o gif)',
     schema: {
       type: 'object',
-      required: ['name', 'lastName', 'pin', 'deptCode', 'accLevelIds', 'position_id', 'file'],
+      required: ['name', 'lastName', 'pin', 'deptCode', 'accLevelIds', 'position_id'],
       properties: {
         name: { type: 'string', minLength: 10, example: 'Juan Carlos' },
         lastName: { type: 'string', minLength: 5, example: 'Pérez López' },
@@ -67,14 +67,15 @@ export class EmployeesController {
     },
   })
   @ApiCreatedResponse({
-    description: 'Empleado enviado a ZKBioAccess correctamente',
-    schema: { type: 'string', example: 'Empleado Creado/Actulizado Correctamente' },
+    description: 'Empleado creado correctamente',
+    schema: { type: 'string', example: 'Empleado Creado Correctamente' },
   })
   @ApiBadRequestResponse({
-    description: 'Datos inválidos (validación del body o propiedades no permitidas), no se envió archivo o no es una imagen válida ("Make sure that the file exists and is an image"), o ZKBioAccess rechazó la foto porque no se detectó el rostro',
+    description: 'Datos inválidos (validación del body o propiedades no permitidas), el empleado con código <pin> ya existe, la posición <code> ya cuenta con un empleado asignado, ZKBioAccess rechazó el empleado (mensaje de ZKBioAccess) o rechazó la foto porque no se detectó el rostro',
   })
+  @ApiNotFoundResponse({ description: 'La posición con ID <position_id> no existe' })
   @ApiInternalServerErrorResponse({
-    description: 'Error al comunicarse con ZKBioAccess o al crear/actualizar el empleado',
+    description: 'Error inesperado al crear el empleado ("Hubo un error")',
   })
   create(@UploadedFile() file: any, @Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeesService.create(createEmployeeDto, file);
@@ -85,7 +86,7 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
   @ApiOperation({
     summary: 'Actualizar empleado',
-    description: 'Valida que la posición exista y no tenga otro empleado asignado, envía el empleado (con el PIN existente) a ZKBioAccess (/person/add) y asigna la posición. Si se envía foto, se guarda como <pin>.jpg.',
+    description: 'Valida que la posición exista y no tenga otro empleado asignado, envía el empleado (con el PIN existente) a ZKBioAccess (/person/add) y asigna la posición. Si se envía foto, se incluye como personPhoto y se guarda como <pin>.jpg; un archivo que no sea imagen se ignora.',
   })
   @ApiParam({
     name: 'id',
@@ -116,11 +117,11 @@ export class EmployeesController {
     schema: { type: 'string', example: 'Empleado Actualizado Correctamente' },
   })
   @ApiBadRequestResponse({
-    description: 'Datos inválidos, la posición ya cuenta con otro empleado asignado, o ZKBioAccess rechazó la foto porque no se detectó el rostro',
+    description: 'Datos inválidos (validación del body o propiedades no permitidas; el PIN no se acepta), la posición <code> ya cuenta con un empleado asignado, ZKBioAccess rechazó el empleado (mensaje de ZKBioAccess) o rechazó la foto porque no se detectó el rostro',
   })
-  @ApiNotFoundResponse({ description: 'El empleado o la posición no existen' })
+  @ApiNotFoundResponse({ description: 'El usuario con ID <id> no existe, o la posición con ID <position_id> no existe' })
   @ApiInternalServerErrorResponse({
-    description: 'Error al comunicarse con ZKBioAccess o al actualizar el empleado',
+    description: 'Error inesperado al actualizar el empleado ("Hubo un error")',
   })
   update(@Param('id') id: string, @UploadedFile() file: any, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(id, updateEmployeeDto, file);
@@ -130,7 +131,7 @@ export class EmployeesController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Listar empleados',
-    description: 'Devuelve los empleados paginados, con filtro opcional por nombre (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
+    description: 'Devuelve los empleados paginados (con su departamento y el código e ID de su posición), con filtro opcional por nombre (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
   })
   @ApiPaginatedResponse(EmployeeListResponse, 'Listado paginado de empleados')
   @ApiBadRequestResponse({ description: 'Parámetros de consulta inválidos o no permitidos' })
@@ -142,7 +143,7 @@ export class EmployeesController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Obtener empleado',
-    description: 'Devuelve los datos de un empleado por su ID, incluyendo su departamento.',
+    description: 'Devuelve los datos de un empleado por su ID, incluyendo su departamento y el código e ID de su posición.',
   })
   @ApiParam({
     name: 'id',
@@ -177,7 +178,7 @@ export class EmployeesController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Dar de baja empleado',
-    description: 'Busca el empleado por ID y lo da de baja en ZKBioAccess (/person/leave) con tipo de baja 1 y la fecha actual.',
+    description: 'Busca el empleado por ID, lo da de baja en ZKBioAccess (/person/leave) con tipo de baja 1 y la fecha actual, y envía un correo de notificación ("Baja de Empleado") con los datos del empleado y del usuario que realizó la baja.',
   })
   @ApiParam({
     name: 'id',
@@ -201,7 +202,7 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
   @ApiOperation({
     summary: 'Actualizar foto de empleado',
-    description: 'Envía la foto del empleado a ZKBioAccess (/person/updatePersonnelPhoto) y la guarda en el almacenamiento de fotos como <pin>.jpg.',
+    description: 'Valida que el empleado exista, envía la foto a ZKBioAccess (/person/updatePersonnelPhoto) y la guarda en el almacenamiento de fotos como <pin>.jpg.',
   })
   @ApiParam({
     name: 'pin',
@@ -225,9 +226,9 @@ export class EmployeesController {
     schema: { type: 'string', example: 'Foto actualizada correctamente' },
   })
   @ApiBadRequestResponse({
-    description: 'No se envió archivo o no es una imagen válida ("Make sure that the file exists and is an image"), o ZKBioAccess rechazó la foto porque no se detectó el rostro',
+    description: 'No se envió archivo o no es una imagen válida ("Make sure that the file exists and is an image"), o ZKBioAccess rechazó la foto (mensaje de ZKBioAccess, p. ej. no se detectó el rostro)',
   })
-  @ApiNotFoundResponse({ description: 'El usuario con POSICIÓN <pin> no existe' })
+  @ApiNotFoundResponse({ description: 'El usuario con código <pin> no existe' })
   updateEmployeePhoto(@UploadedFile() file: any, @Param('pin') id: string) {
     if (!file) throw new BadRequestException("Make sure that the file exists and is an image");
     return this.employeesService.updateEmployeePhoto(id, file);
