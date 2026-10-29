@@ -94,10 +94,9 @@ export class PositionService {
     return position;
   }
 
-  async validatePositionByCode(code: string, employeeId?: string) {
+  async findOneRawByCode(code: string) {
     const position = await this.findOneByCode(code);
     if (!position) throw new NotFoundException(`La posición con código ${code} no existe`);
-    this.validateAvailability(position, employeeId);
     return position;
   }
 

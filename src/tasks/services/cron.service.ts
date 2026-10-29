@@ -1,5 +1,5 @@
 import { CreationPayload, InactivatePayload, MovementPayload } from '../interfaces/index.js';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { DateHandlerService } from '../../common/services/date-handler.service.js';
 import { EmployeesService } from '../../employees/employees.service.js';
 import { imageBufferToBase64 } from '../../common/helpers/base-64-enconder.js';
@@ -33,6 +33,7 @@ export class CronService {
     ) { }
 
     @Cron('0 0 5 * * *', { timeZone: 'America/Guatemala' })
+    // @Cron(CronExpression.EVERY_10_SECONDS)
     async executeTasks() {
         const tasksPending = await this.taskRepository.find({ where: { status: TaskStatusEnum.pending } });
         const pins = [...new Set(tasksPending.map((r) => r.pin))];
