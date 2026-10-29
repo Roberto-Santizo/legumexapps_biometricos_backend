@@ -22,6 +22,7 @@ import { BiometricsModule } from './biometrics/biometrics.module.js';
 import { PositionFincaModule } from './position-finca/position-finca.module.js';
 import { AreaFincaModule } from './area-finca/area-finca.module.js';
 import { PositionModule } from './position/position.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { PositionModule } from './position/position.module.js';
     PositionFincaModule,
     AreaFincaModule,
     PositionModule,
+    DashboardModule,
   ],
 })
 export class AppModule { }
