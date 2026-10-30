@@ -14,13 +14,14 @@ import { Planification } from '../planifications/entities/planification.entity.j
 import { PlanificationsService } from '../planifications/planifications.service.js';
 import { PhotosService } from '../photos/photos.service.js';
 import { PositionService } from '../position/position.service.js';
-import { Task, TaskTypeEnum } from './entities/task.entity.js';
-import { TaskPayload } from './interfaces/index.js';
+import { Task, TaskStatusEnum, TaskTypeEnum } from './entities/task.entity.js';
+import { CreationPayload, MovementPayload, TaskPayload } from './interfaces/index.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
 import { CreateCreationTaskDto } from './dto/create-creation-task.dto.js';
 import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
 import { CreateMovementTaskDto } from './dto/create-movement-task.dto.js';
 import { TaskResource } from './resource/task.resource.js';
+import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { User } from '../auth/entities/user.entity.js';
 import ExcelJS from 'exceljs';
 
@@ -73,6 +74,34 @@ export class TasksService {
     if (!task) throw new NotFoundException(`La tarea con ID ${id} no existe`);
 
     return this.resource.taskEntityToJson(task);
+  }
+
+  async update(id: string, updateTaskDto: UpdateTaskDto) {
+    try {
+      const task = await this.taskRepository.findOne({ where: { id }, relations: { planification: true } });
+      if (!task) throw new NotFoundException(`La tarea con ID ${id} no existe`);
+      if (task.status !== TaskStatusEnum.pending) throw new BadRequestException(`Solo se pueden editar tareas en estado ${TaskStatusEnum.pending}`);
+
+      this.validateUpdateFields(task.type, updateTaskDto);
+
+      const scheduledAt = updateTaskDto.scheduled_at ?? task.scheduled_at.toString();
+      const planification = updateTaskDto.planification_id
+        ? await this.planificationsService.findOneRaw(updateTaskDto.planification_id)
+        : task.planification;
+
+      this.validateScheduledAtNotPast(scheduledAt);
+      // Tareas de Excel sin planificación: no hay semana contra la cual validar
+      if (planification) this.validateScheduledAtInWeek(scheduledAt, planification);
+
+      const payload = await this.recalculatePayload(task, updateTaskDto, scheduledAt);
+
+      await this.taskRepository.save({ id: task.id, scheduled_at: scheduledAt, planification, payload });
+
+      return this.findOne(task.id);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.databaseHelpers.handleExeptions(error);
+    }
   }
 
   async remove(id: string) {
@@ -293,16 +322,64 @@ export class TasksService {
   // La disponibilidad de la posición se valida al ejecutar la tarea
   private async validateAssignment(authDeptId: string, positionId: string, accLevelIds: string) {
     const department = await this.authDepartmentService.findOne(authDeptId);
+    const position = await this.validatePositionAndLevels(positionId, accLevelIds);
+
+    return { department, position };
+  }
+
+  private async validatePositionAndLevels(positionId: string, accLevelIds: string) {
+    if (!positionId) throw new BadRequestException('La tarea no tiene una posición asignada, indique position_id');
     const position = await this.positionService.findOneRaw(positionId);
 
-    const levelIds = accLevelIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+    const levelIds = (accLevelIds ?? '').split(',').map(id => id.trim()).filter(id => id.length > 0);
     if (levelIds.length === 0) throw new BadRequestException('Debe indicar al menos un nivel de acceso');
 
     for (const levelId of levelIds) {
       await this.accLevelService.findOne(levelId);
     }
 
-    return { department, position };
+    return position;
+  }
+
+  private async findDepartmentByCode(deptCode: string) {
+    const departments = await this.authDepartmentService.getAll();
+    const department = departments.find(dept => dept.code === deptCode);
+    if (!department) throw new NotFoundException(`El departamento ${deptCode} no existe`);
+    return department;
+  }
+
+  // Rechaza campos de payload que no aplican al tipo de la tarea
+  private validateUpdateFields(type: TaskTypeEnum, updateTaskDto: UpdateTaskDto) {
+    const allowedByType: Record<TaskTypeEnum, (keyof UpdateTaskDto)[]> = {
+      [TaskTypeEnum.creation]: ['position_id', 'auth_dept_id', 'accLevelIds', 'name', 'lastName'],
+      [TaskTypeEnum.movement]: ['position_id', 'auth_dept_id', 'accLevelIds'],
+      [TaskTypeEnum.inactivate]: [],
+    };
+    const payloadFields: (keyof UpdateTaskDto)[] = ['position_id', 'auth_dept_id', 'accLevelIds', 'name', 'lastName'];
+
+    const invalid = payloadFields.filter(field => updateTaskDto[field] !== undefined && !allowedByType[type].includes(field));
+    if (invalid.length > 0) throw new BadRequestException(`Los campos ${invalid.join(', ')} no aplican a una tarea de tipo ${type}`);
+  }
+
+  // Recalcula el payload con los valores finales (enviados o actuales)
+  private async recalculatePayload(task: Task, updateTaskDto: UpdateTaskDto, scheduledAt: string): Promise<TaskPayload> {
+    if (task.type === TaskTypeEnum.inactivate) return createNewTaskInactivationPayload(task.pin, scheduledAt);
+
+    const current = task.payload as CreationPayload | MovementPayload;
+    const department = updateTaskDto.auth_dept_id
+      ? await this.authDepartmentService.findOne(updateTaskDto.auth_dept_id)
+      : await this.findDepartmentByCode(current.deptCode);
+    const accLevelIds = updateTaskDto.accLevelIds ?? current.accLevelIds;
+    const position = await this.validatePositionAndLevels(updateTaskDto.position_id ?? current.position_id, accLevelIds);
+
+    if (task.type === TaskTypeEnum.movement) {
+      const employee = await this.employeeService.findOneByPin(task.pin);
+      return createNewTaskMovementPayload(position.code, employee.pin, department.code, accLevelIds, employee.name, employee.last_name, position.id);
+    }
+
+    const name = updateTaskDto.name ?? (current as CreationPayload).name;
+    const lastName = updateTaskDto.lastName ?? (current as CreationPayload).lastName;
+    return createNewTaskPayload(name, lastName, task.pin, department.code, accLevelIds, position.id);
   }
 
   // Guarda una tarea individual (sin lote ni archivo de origen) dentro de una planificación

@@ -1,5 +1,5 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Body, Controller, Get, Post, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, Query, ParseUUIDPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
@@ -24,6 +24,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
 import { TaskResponse } from './resource/task.response.js';
 import { TasksService } from './tasks.service.js';
+import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
 import { imageFilter } from '../common/helpers/image-filter.js';
@@ -139,6 +140,12 @@ export class TasksController {
   @ApiNotFoundResponse({ description: 'La tarea con ID <id> no existe' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.tasksService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateTaskDto: UpdateTaskDto) {
+    return this.tasksService.update(id, updateTaskDto);
   }
 
 
