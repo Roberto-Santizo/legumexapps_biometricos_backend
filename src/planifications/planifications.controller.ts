@@ -15,9 +15,10 @@ import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { Auth } from '../auth/decorators/auth.decorator.js';
 import { CreatePlanificationDto } from './dto/create-planification.dto.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
-import { PlanificationDetailResponse, PlanificationListResponse, PlanificationResponse } from './resources/planification.response.js';
+import { PlanificationListResponse, PlanificationResponse } from './resources/planification.response.js';
 import { PlanificationQueryDto } from './dto/planification-query.dto.js';
 import { PlanificationsService } from './planifications.service.js';
+import { TaskResponse } from '../tasks/resource/task.response.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
 
@@ -61,12 +62,12 @@ export class PlanificationsController {
     return this.planificationsService.findAll(planificationQueryDto);
   }
 
-  @Get(':id')
+  @Get('tasks/:id')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Obtener planificación',
-    description: 'Devuelve la planificación con sus tareas, ordenadas por fecha programada.',
+    summary: 'Listar tareas de la planificación',
+    description: 'Devuelve las tareas de la planificación, ordenadas por fecha programada.',
   })
   @ApiParam({
     name: 'id',
@@ -75,7 +76,30 @@ export class PlanificationsController {
     description: 'ID de la planificación (UUID)',
     example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10',
   })
-  @ApiOkResponse({ description: 'Planificación encontrada', type: PlanificationDetailResponse })
+  @ApiOkResponse({ description: 'Tareas de la planificación', type: [TaskResponse] })
+  @ApiBadRequestResponse({ description: 'El ID no es un UUID válido' })
+  @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
+  @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })
+  @ApiNotFoundResponse({ description: 'La planificación con ID <id> no existe' })
+  findTasks(@Param('id', ParseUUIDPipe) id: string) {
+    return this.planificationsService.findTasks(id);
+  }
+
+  @Get(':id')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Obtener planificación',
+    description: 'Devuelve la información de la planificación, sin sus tareas (ver `GET /planifications/tasks/{id}`).',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'ID de la planificación (UUID)',
+    example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10',
+  })
+  @ApiOkResponse({ description: 'Planificación encontrada', type: PlanificationResponse })
   @ApiBadRequestResponse({ description: 'El ID no es un UUID válido' })
   @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
   @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })

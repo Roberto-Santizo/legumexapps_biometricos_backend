@@ -1,6 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { PlanificationCounts, PlanificationDetailInterface, PlanificationListInterface, PlanificationResourceInterface } from "../interfaces/index.js";
-import { TaskResponse } from "../../tasks/resource/task.response.js";
+import { PlanificationCounts, PlanificationListInterface, PlanificationResourceInterface } from "../interfaces/index.js";
 
 export class PlanificationResponse implements PlanificationResourceInterface {
     @ApiProperty({ description: 'ID de la planificación (UUID)', format: 'uuid', example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10' })
@@ -58,9 +57,4 @@ class PlanificationCountsResponse implements PlanificationCounts {
 export class PlanificationListResponse extends PlanificationResponse implements PlanificationListInterface {
     @ApiProperty({ description: 'Conteos de tareas de la semana', type: PlanificationCountsResponse })
     counts: PlanificationCountsResponse;
-}
-
-export class PlanificationDetailResponse extends PlanificationResponse implements PlanificationDetailInterface {
-    @ApiProperty({ description: 'Tareas de la semana ordenadas por fecha programada', type: [TaskResponse] })
-    tasks: TaskResponse[];
 }

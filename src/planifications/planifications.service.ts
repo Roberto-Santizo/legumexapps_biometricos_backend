@@ -85,12 +85,17 @@ export class PlanificationsService {
 
   async findOne(id: string) {
     const planification = await this.findOneRaw(id);
+    return PlanificationResource.planificationResource(planification);
+  }
+
+  async findTasks(id: string) {
+    const planification = await this.findOneRaw(id);
     const tasks = await this.taskRepository.find({
       where: { planification: { id: planification.id } },
       order: { scheduled_at: 'ASC', created_at: 'ASC' },
     });
 
-    return PlanificationResource.withTasks(planification, this.taskResource.collection(tasks));
+    return this.taskResource.collection(tasks);
   }
 
   async findOneRaw(id: string) {

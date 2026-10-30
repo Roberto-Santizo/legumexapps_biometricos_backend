@@ -1,5 +1,3 @@
-import { TaskResourceInterface } from "../../tasks/interfaces/index.js";
-
 export interface PlanificationResourceInterface {
     id: string;
     year: number;
@@ -17,8 +15,4 @@ export interface PlanificationCounts {
 
 export interface PlanificationListInterface extends PlanificationResourceInterface {
     counts: PlanificationCounts;
-}
-
-export interface PlanificationDetailInterface extends PlanificationResourceInterface {
-    tasks: TaskResourceInterface[];
 }
