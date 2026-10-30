@@ -16,6 +16,7 @@ import { PositionService } from '../position/position.service.js';
 import { Task, TaskTypeEnum } from './entities/task.entity.js';
 import { TaskPayload } from './interfaces/index.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
+import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
 import { TaskResource } from './resource/task.resource.js';
 import { User } from '../auth/entities/user.entity.js';
 import ExcelJS from 'exceljs';
@@ -75,6 +76,23 @@ export class TasksService {
     await this.taskRepository.delete({ id: task.id });
 
     return `Tarea ${id} eliminada correctamente`;
+  }
+
+  async createInactivation(createInactivationTaskDto: CreateInactivationTaskDto, user: User) {
+    const { planification_id, employee_id, scheduled_at } = createInactivationTaskDto;
+
+    try {
+      const planification = await this.validateSchedule(planification_id, scheduled_at);
+      const employee = await this.employeeService.findOneRaw(employee_id);
+
+      const payload = createNewTaskInactivationPayload(employee.pin, scheduled_at);
+      const task = await this.saveScheduledTask(TaskTypeEnum.inactivate, payload, scheduled_at, planification, user);
+
+      return this.findOne(task.id);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.databaseHelpers.handleExeptions(error);
+    }
   }
 
   async uploadFile(file: any, user: User, type: string) {
@@ -222,6 +240,28 @@ export class TasksService {
     if (!employee) throw new NotFoundException(`El empleado con código ${code} no existe`);
 
     return { employee };
+  }
+
+  // Guarda una tarea individual (sin lote ni archivo de origen) dentro de una planificación
+  private async saveScheduledTask(
+    type: TaskTypeEnum,
+    payload: TaskPayload,
+    scheduledAt: string,
+    planification: Planification,
+    user: User,
+    previous?: Record<string, unknown>
+  ) {
+    const newTask = this.taskRepository.create({
+      type,
+      pin: payload.pin,
+      payload,
+      scheduled_at: scheduledAt,
+      planification,
+      created_by: user,
+      previous: previous ?? null,
+    });
+
+    return this.taskRepository.save(newTask);
   }
 
   // Valida planificación y fecha programada de una tarea individual; devuelve la planificación

@@ -1,5 +1,5 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, Query, ParseUUIDPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
@@ -17,6 +17,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiPaginatedResponse } from '../common/decorators/index.js';
+import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
 import { TaskResponse } from './resource/task.response.js';
@@ -78,6 +79,12 @@ export class TasksController {
   create(@Param('type') type: string, @UploadedFile() file: any, @GetUser() user: User) {
     if (!file) throw new BadRequestException("Make sure that the file exists and its an xlxs");
     return this.tasksService.uploadFile(file, user, type);
+  }
+
+  @Post('inactivate')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  createInactivation(@Body() createInactivationTaskDto: CreateInactivationTaskDto, @GetUser() user: User) {
+    return this.tasksService.createInactivation(createInactivationTaskDto, user);
   }
 
   @Get()

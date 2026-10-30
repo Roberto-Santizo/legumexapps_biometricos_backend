@@ -123,6 +123,12 @@ export class EmployeesService {
     return EmployeeResource.employeeList(employee);
   }
 
+  async findOneRaw(id: string) {
+    const employee = await this.employeeRepository.findOneBy({ id });
+    if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
+    return employee;
+  }
+
   async findOneByPin(pin: string) {
     const employee = await this.employeeRepository.findOneBy({ pin });
     if (!employee) throw new NotFoundException(`El usuario con código ${pin} no existe`);
