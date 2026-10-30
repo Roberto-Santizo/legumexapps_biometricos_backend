@@ -17,6 +17,7 @@ import { Task, TaskTypeEnum } from './entities/task.entity.js';
 import { TaskPayload } from './interfaces/index.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
 import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
+import { CreateMovementTaskDto } from './dto/create-movement-task.dto.js';
 import { TaskResource } from './resource/task.resource.js';
 import { User } from '../auth/entities/user.entity.js';
 import ExcelJS from 'exceljs';
@@ -87,6 +88,25 @@ export class TasksService {
 
       const payload = createNewTaskInactivationPayload(employee.pin, scheduled_at);
       const task = await this.saveScheduledTask(TaskTypeEnum.inactivate, payload, scheduled_at, planification, user);
+
+      return this.findOne(task.id);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.databaseHelpers.handleExeptions(error);
+    }
+  }
+
+  async createMovement(createMovementTaskDto: CreateMovementTaskDto, user: User) {
+    const { planification_id, employee_id, position_id, auth_dept_id, accLevelIds, scheduled_at } = createMovementTaskDto;
+
+    try {
+      const planification = await this.validateSchedule(planification_id, scheduled_at);
+      const employee = await this.employeeService.findOneRaw(employee_id);
+      const { department, position } = await this.validateAssignment(auth_dept_id, position_id, accLevelIds);
+
+      const payload = createNewTaskMovementPayload(position.code, employee.pin, department.code, accLevelIds, employee.name, employee.last_name, position.id);
+      const previous = formatEmployeeEntity(employee);
+      const task = await this.saveScheduledTask(TaskTypeEnum.movement, payload, scheduled_at, planification, user, previous);
 
       return this.findOne(task.id);
     } catch (error) {
@@ -240,6 +260,22 @@ export class TasksService {
     if (!employee) throw new NotFoundException(`El empleado con código ${code} no existe`);
 
     return { employee };
+  }
+
+  // Valida por ID que existan el departamento, la posición y cada nivel de acceso (separados por coma)
+  // La disponibilidad de la posición se valida al ejecutar la tarea
+  private async validateAssignment(authDeptId: string, positionId: string, accLevelIds: string) {
+    const department = await this.authDepartmentService.findOne(authDeptId);
+    const position = await this.positionService.findOneRaw(positionId);
+
+    const levelIds = accLevelIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+    if (levelIds.length === 0) throw new BadRequestException('Debe indicar al menos un nivel de acceso');
+
+    for (const levelId of levelIds) {
+      await this.accLevelService.findOne(levelId);
+    }
+
+    return { department, position };
   }
 
   // Guarda una tarea individual (sin lote ni archivo de origen) dentro de una planificación

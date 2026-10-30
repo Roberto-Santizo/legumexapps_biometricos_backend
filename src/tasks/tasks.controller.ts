@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
+import { CreateMovementTaskDto } from './dto/create-movement-task.dto.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
 import { TaskResponse } from './resource/task.response.js';
@@ -79,6 +80,12 @@ export class TasksController {
   create(@Param('type') type: string, @UploadedFile() file: any, @GetUser() user: User) {
     if (!file) throw new BadRequestException("Make sure that the file exists and its an xlxs");
     return this.tasksService.uploadFile(file, user, type);
+  }
+
+  @Post('movement')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  createMovement(@Body() createMovementTaskDto: CreateMovementTaskDto, @GetUser() user: User) {
+    return this.tasksService.createMovement(createMovementTaskDto, user);
   }
 
   @Post('inactivate')
