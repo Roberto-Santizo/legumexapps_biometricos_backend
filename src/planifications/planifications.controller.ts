@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator.js';
 import { CreatePlanificationDto } from './dto/create-planification.dto.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
+import { PlanificationQueryDto } from './dto/planification-query.dto.js';
 import { PlanificationsService } from './planifications.service.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
@@ -16,6 +17,12 @@ export class PlanificationsController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   create(@Body() createPlanificationDto: CreatePlanificationDto, @GetUser() user: User) {
     return this.planificationsService.create(createPlanificationDto, user);
+  }
+
+  @Get()
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  findAll(@Query() planificationQueryDto: PlanificationQueryDto) {
+    return this.planificationsService.findAll(planificationQueryDto);
   }
 
   @Get(':id')
