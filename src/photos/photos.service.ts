@@ -35,6 +35,19 @@ export class PhotosService {
     await this.photosRepository.save(newPhoto);
   }
 
+  // Guarda o sobrescribe <code>.jpg y crea el registro Photo si no existe
+  async upsert(code: string, file: any, created_by: User) {
+    const url = `${code}.jpg`;
+
+    await this.photos.put(url, file.buffer, { contentType: file.mimetype });
+
+    const photo = await this.photosRepository.findOneBy({ code });
+    if (photo) return photo;
+
+    const newPhoto = this.photosRepository.create({ code, url, created_by });
+    return this.photosRepository.save(newPhoto);
+  }
+
   async findAll(photoQueryDto: PhotoQueryDto) {
     const { limit = 10, offset = 0 } = photoQueryDto;
     const where = this.filters.buildWhere<Photo, PhotoQueryDto>(photoQueryDto, { like: ['code'] });
