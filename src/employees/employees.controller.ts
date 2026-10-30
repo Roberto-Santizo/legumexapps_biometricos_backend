@@ -45,14 +45,14 @@ export class EmployeesController {
   @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
   @ApiOperation({
     summary: 'Crear empleado',
-    description: 'Valida que el PIN no exista y que la posición exista y no tenga empleado asignado, envía el empleado a la API de ZKBioAccess (/person/add) y le asigna la posición. Si se envía foto, se incluye como personPhoto y se guarda en el almacenamiento de fotos como <pin>.jpg; un archivo que no sea imagen se ignora.',
+    description: 'Valida que el PIN no exista, envía el empleado a la API de ZKBioAccess (/person/add) y, si se envía position_id, valida que la posición exista y no tenga empleado asignado y se la asigna. Si se envía foto, se incluye como personPhoto y se guarda en el almacenamiento de fotos como <pin>.jpg; un archivo que no sea imagen se ignora.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'Datos del empleado e imagen opcional (jpg, jpeg, png o gif)',
     schema: {
       type: 'object',
-      required: ['name', 'lastName', 'pin', 'deptCode', 'accLevelIds', 'position_id'],
+      required: ['name', 'lastName', 'pin', 'deptCode', 'accLevelIds'],
       properties: {
         name: { type: 'string', minLength: 10, example: 'Juan Carlos' },
         lastName: { type: 'string', minLength: 5, example: 'Pérez López' },

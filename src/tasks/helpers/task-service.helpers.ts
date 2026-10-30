@@ -11,7 +11,8 @@ export const getCreationTaskRowValues = (row: ExcelJS.Row) => {
     const accLevelName = row.getCell(5).value as string;
     const scheduledAt = row.getCell(6).value as string;
 
-    if (!position || !code || !deptCode || !accLevelName || !scheduledAt || !name) throw new BadRequestException("Asegurese que el excel cumpla con el formato esperado");
+    // La posición es opcional en altas
+    if (!code || !deptCode || !accLevelName || !scheduledAt || !name) throw new BadRequestException("Asegurese que el excel cumpla con el formato esperado");
 
     return { position, code, name, scheduledAt, deptCode, accLevelName }
 }
@@ -37,7 +38,7 @@ export const getInactivationTaskRowValues = (row: ExcelJS.Row) => {
     return { code, scheduledAt }
 }
 
-export const createNewTaskPayload = (name: string, lastName: string, pin: string, deptCode: string, accLevelIds: string, position_id: string): CreationPayload => {
+export const createNewTaskPayload = (name: string, lastName: string, pin: string, deptCode: string, accLevelIds: string, position_id?: string): CreationPayload => {
     return { name, lastName, pin, deptCode, accLevelIds, position_id };
 }
 

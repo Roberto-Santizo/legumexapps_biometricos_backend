@@ -50,12 +50,17 @@ export class EmployeesService {
       const exists = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
       if (exists) throw new BadRequestException(`El empleado con código ${createEmployeeDto.pin} ya existe`);
 
-      const position = await this.positionService.validatePosition(createEmployeeDto.position_id);
+      // La posición es opcional; solo se valida y asigna si se envía
+      const position = createEmployeeDto.position_id
+        ? await this.positionService.validatePosition(createEmployeeDto.position_id)
+        : null;
 
       await this.saveInZkBioaccess(createEmployeeDto, file, user);
 
-      const employee = await this.findOneByPin(createEmployeeDto.pin);
-      await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+      if (position) {
+        const employee = await this.findOneByPin(createEmployeeDto.pin);
+        await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+      }
 
       return 'Empleado Creado Correctamente';
     } catch (error) {
@@ -70,11 +75,13 @@ export class EmployeesService {
       const employee = await this.employeeRepository.findOneBy({ id });
       if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
 
-      const position = await this.positionService.validatePosition(updateEmployeeDto.position_id, employee.id);
+      const position = updateEmployeeDto.position_id
+        ? await this.positionService.validatePosition(updateEmployeeDto.position_id, employee.id)
+        : null;
 
       await this.saveInZkBioaccess({ ...updateEmployeeDto, pin: employee.pin }, file, user);
 
-      await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+      if (position) await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
 
       return 'Empleado Actualizado Correctamente';
     } catch (error) {
@@ -86,12 +93,16 @@ export class EmployeesService {
 
   async createOrUpdateWithPosition(createEmployeeDto: CreateEmployeeDto, image?: string) {
     const current = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
-    const position = await this.positionService.validatePosition(createEmployeeDto.position_id, current?.id);
+    const position = createEmployeeDto.position_id
+      ? await this.positionService.validatePosition(createEmployeeDto.position_id, current?.id)
+      : null;
 
     const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, image);
 
-    const employee = current ?? await this.findOneByPin(createEmployeeDto.pin);
-    await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+    if (position) {
+      const employee = current ?? await this.findOneByPin(createEmployeeDto.pin);
+      await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+    }
 
     return flag;
   }

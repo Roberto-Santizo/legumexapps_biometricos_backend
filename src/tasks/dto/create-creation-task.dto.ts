@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsDateString, IsString, IsUUID, Matches } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsDateString, IsOptional, IsString, IsUUID, Matches } from "class-validator";
 
 export class CreateCreationTaskDto {
     @ApiProperty({ description: 'ID de la planificación semanal', format: 'uuid', example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10' })
@@ -18,9 +18,10 @@ export class CreateCreationTaskDto {
     @IsString()
     lastName: string;
 
-    @ApiProperty({ description: 'ID de la posición a asignar (32 caracteres); su disponibilidad se valida al ejecutar la tarea', example: '4028898594b7f9660194b7fb5d7a0600' })
+    @ApiPropertyOptional({ description: 'ID de la posición a asignar (32 caracteres); su disponibilidad se valida al ejecutar la tarea', example: '4028898594b7f9660194b7fb5d7a0600' })
+    @IsOptional()
     @IsString()
-    position_id: string;
+    position_id?: string;
 
     @ApiProperty({ description: 'ID del departamento (32 caracteres)', example: '4028898594b7f9660194b7fb5d7a0300' })
     @IsString()

@@ -92,14 +92,14 @@ export class TasksController {
   @ApiOperation({
     summary: 'Programar alta',
     description: 'Crea una tarea de alta (`alta`, `pendiente`) dentro de una planificación. La foto es opcional: si se adjunta, se guarda o sobrescribe `<pin>.jpg`; si no existe al ejecutar la tarea, el error queda en `last_error`. '
-      + '`scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. La disponibilidad de la posición se valida al ejecutar.',
+      + '`scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. La posición es opcional; si se envía, su disponibilidad se valida al ejecutar.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'Datos del nuevo empleado y foto opcional (jpg, jpeg, png o gif)',
     schema: {
       type: 'object',
-      required: ['planification_id', 'pin', 'name', 'lastName', 'position_id', 'auth_dept_id', 'accLevelIds', 'scheduled_at'],
+      required: ['planification_id', 'pin', 'name', 'lastName', 'auth_dept_id', 'accLevelIds', 'scheduled_at'],
       properties: {
         planification_id: { type: 'string', format: 'uuid', example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10' },
         pin: { type: 'string', example: '10045' },

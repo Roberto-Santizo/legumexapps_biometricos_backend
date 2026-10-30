@@ -4,7 +4,7 @@ export interface CreationPayload {
     lastName: string;
     deptCode: string;
     accLevelIds: string;
-    position_id: string;
+    position_id?: string;
     accStartTime?: string;
     accEndTime?: string;
 }
