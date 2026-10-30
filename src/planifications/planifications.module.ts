@@ -15,5 +15,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     AuthModule,
     CommonModule
   ],
+  exports: [PlanificationsService]
 })
 export class PlanificationsModule { }

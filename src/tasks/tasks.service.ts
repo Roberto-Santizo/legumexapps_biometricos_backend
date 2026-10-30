@@ -10,6 +10,8 @@ import { Filters } from '../common/providers/filters.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { paginate } from '../common/helpers/paginate.js';
+import { Planification } from '../planifications/entities/planification.entity.js';
+import { PlanificationsService } from '../planifications/planifications.service.js';
 import { PositionService } from '../position/position.service.js';
 import { Task, TaskTypeEnum } from './entities/task.entity.js';
 import { TaskPayload } from './interfaces/index.js';
@@ -42,6 +44,7 @@ export class TasksService {
     private readonly datasource: DataSource,
     private readonly filters: Filters,
     private readonly dateHandler: DateHandlerService,
+    private readonly planificationsService: PlanificationsService,
 
   ) {
     this.resource = new TaskResource(this.dateHandler);
@@ -219,5 +222,30 @@ export class TasksService {
     if (!employee) throw new NotFoundException(`El empleado con código ${code} no existe`);
 
     return { employee };
+  }
+
+  // Valida planificación y fecha programada de una tarea individual; devuelve la planificación
+  private async validateSchedule(planificationId: string, scheduledAt: string) {
+    const planification = await this.planificationsService.findOneRaw(planificationId);
+
+    this.validateScheduledAtNotPast(scheduledAt);
+    this.validateScheduledAtInWeek(scheduledAt, planification);
+
+    return planification;
+  }
+
+  // Las fechas se comparan como 'YYYY-MM-DD'
+  private validateScheduledAtNotPast(scheduledAt: string) {
+    const today = this.dateHandler.getCurrentDate('yyyy-MM-dd');
+    if (scheduledAt < today) throw new BadRequestException(`La fecha programada ${scheduledAt} no puede ser anterior a hoy (${today})`);
+  }
+
+  private validateScheduledAtInWeek(scheduledAt: string, planification: Planification) {
+    const startDate = planification.start_date.toString();
+    const endDate = planification.end_date.toString();
+
+    if (scheduledAt < startDate || scheduledAt > endDate) {
+      throw new BadRequestException(`La fecha programada ${scheduledAt} no está dentro de la semana ${planification.week} del ${planification.year} (${startDate} a ${endDate})`);
+    }
   }
 }
