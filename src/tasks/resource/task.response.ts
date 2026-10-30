@@ -58,4 +58,13 @@ export class TaskResponse implements TaskResourceInterface {
         example: 'Juan Pérez López',
     })
     created_by: string;
+
+    @ApiPropertyOptional({
+        description: 'ID de la planificación semanal (null en tareas cargadas por Excel)',
+        type: String,
+        format: 'uuid',
+        nullable: true,
+        example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10',
+    })
+    planification_id: string | null;
 }

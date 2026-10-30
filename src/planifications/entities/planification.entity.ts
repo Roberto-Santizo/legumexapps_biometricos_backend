@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Task } from "../../tasks/entities/task.entity.js";
 import { User } from "../../auth/entities/user.entity.js";
 
 @Entity()
@@ -19,6 +20,8 @@ export class Planification {
 
     @ApiProperty({ description: 'Domingo de la semana', type: String, format: 'date', example: '2026-11-08' })
     @Column('date') end_date: Date;
+
+    @OneToMany(() => Task, task => task.planification) tasks: Task[];
 
     @ManyToOne(() => User, { eager: true }) created_by: User;
 

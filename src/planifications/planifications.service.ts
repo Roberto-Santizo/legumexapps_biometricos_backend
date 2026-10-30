@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Planification } from './entities/planification.entity.js';
 import { PlanificationResource } from './resources/planification.resource.js';
 import { Repository } from 'typeorm';
+import { Task } from '../tasks/entities/task.entity.js';
 import { TZDate } from '@date-fns/tz';
 import { User } from '../auth/entities/user.entity.js';
 
@@ -16,6 +17,9 @@ export class PlanificationsService {
   constructor(
     @InjectRepository(Planification)
     private readonly planificationRepository: Repository<Planification>,
+
+    @InjectRepository(Task)
+    private readonly taskRepository: Repository<Task>,
 
     private readonly databaseHelpers: DatabaseHelpers,
   ) { }
@@ -60,6 +64,10 @@ export class PlanificationsService {
 
   async remove(id: string) {
     const planification = await this.findOneRaw(id);
+
+    const tasks = await this.taskRepository.countBy({ planification: { id: planification.id } });
+    if (tasks > 0) throw new BadRequestException(`La planificación tiene ${tasks} tarea(s) asociada(s) y no puede eliminarse`);
+
     await this.planificationRepository.delete({ id: planification.id });
 
     return `Planificación ${id} eliminada correctamente`;

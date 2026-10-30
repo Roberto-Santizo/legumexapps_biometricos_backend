@@ -34,6 +34,7 @@ export interface TaskResourceInterface {
     previous: Record<string, unknown> | null;
     scheduled_at: string;
     created_by: string;
+    planification_id: string | null;
 }
 
 export type TaskPayload = CreationPayload | MovementPayload | InactivatePayload;

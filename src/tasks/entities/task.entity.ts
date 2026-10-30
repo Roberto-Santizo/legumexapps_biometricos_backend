@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
 import { type TaskPayload } from "../interfaces/index.js";
 import { User } from "../../auth/entities/user.entity.js";
+import { Planification } from "../../planifications/entities/planification.entity.js";
 
 export enum TaskTypeEnum { movement = 'movimiento', creation = 'alta', inactivate = 'baja' }
 export enum TaskStatusEnum { pending = 'pendiente', completed = 'completada', failed = 'fallida' }
@@ -51,14 +52,21 @@ export class Task {
     @ApiPropertyOptional({ description: 'Último error ocurrido al ejecutar la tarea', type: String, nullable: true, example: null })
     @Column('text', { nullable: true }) last_error: string | null;
 
-    @ApiProperty({ description: 'ID del lote (archivo) en que se programó la tarea', example: '4028898594b7f9660194b7fb5d7a0900' })
-    @Column('uuid') batch_id: string;
+    @ApiPropertyOptional({ description: 'ID del lote (archivo) en que se programó la tarea (null en tareas individuales)', type: String, nullable: true, example: '4028898594b7f9660194b7fb5d7a0900' })
+    @Column('uuid', { nullable: true }) batch_id: string | null;
 
-    @ApiProperty({ description: 'Nombre del archivo Excel de origen', example: 'movimientos_octubre.xlsx' })
-    @Column('text') source_file: string;
+    @ApiPropertyOptional({ description: 'Nombre del archivo Excel de origen (null en tareas individuales)', type: String, nullable: true, example: 'movimientos_octubre.xlsx' })
+    @Column('text', { nullable: true }) source_file: string | null;
 
-    @ApiProperty({ description: 'Fila del archivo Excel de origen', example: '2' })
-    @Column('text') source_row: string;
+    @ApiPropertyOptional({ description: 'Fila del archivo Excel de origen (null en tareas individuales)', type: String, nullable: true, example: '2' })
+    @Column('text', { nullable: true }) source_row: string | null;
+
+    @ManyToOne(() => Planification, planification => planification.tasks, { nullable: true, onDelete: 'RESTRICT' })
+    @JoinColumn({ name: 'planification_id' })
+    planification: Planification | null;
+
+    @ApiPropertyOptional({ description: 'ID de la planificación semanal (null en tareas cargadas por Excel)', type: String, format: 'uuid', nullable: true, example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10' })
+    @RelationId((task: Task) => task.planification) planification_id: string | null;
 
 
     @ManyToOne(() => User, { eager: true }) created_by: User;
