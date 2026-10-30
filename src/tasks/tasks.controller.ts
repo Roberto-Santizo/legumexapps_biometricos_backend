@@ -17,6 +17,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiPaginatedResponse } from '../common/decorators/index.js';
+import { CreateCreationTaskDto } from './dto/create-creation-task.dto.js';
 import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
 import { CreateMovementTaskDto } from './dto/create-movement-task.dto.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
@@ -25,6 +26,7 @@ import { TaskResponse } from './resource/task.response.js';
 import { TasksService } from './tasks.service.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
+import { imageFilter } from '../common/helpers/image-filter.js';
 import { xlxsFileFilter } from '../common/helpers/xlxs-file-filter.js';
 
 const UNAUTHORIZED_DESCRIPTION = 'Token ausente o inválido ("Token not valid") o el usuario no está activo ("User is not active")';
@@ -80,6 +82,13 @@ export class TasksController {
   create(@Param('type') type: string, @UploadedFile() file: any, @GetUser() user: User) {
     if (!file) throw new BadRequestException("Make sure that the file exists and its an xlxs");
     return this.tasksService.uploadFile(file, user, type);
+  }
+
+  @Post('creation')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
+  createCreation(@Body() createCreationTaskDto: CreateCreationTaskDto, @UploadedFile() file: any, @GetUser() user: User) {
+    return this.tasksService.createCreation(createCreationTaskDto, file, user);
   }
 
   @Post('movement')

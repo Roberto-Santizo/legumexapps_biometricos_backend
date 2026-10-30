@@ -12,10 +12,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { paginate } from '../common/helpers/paginate.js';
 import { Planification } from '../planifications/entities/planification.entity.js';
 import { PlanificationsService } from '../planifications/planifications.service.js';
+import { PhotosService } from '../photos/photos.service.js';
 import { PositionService } from '../position/position.service.js';
 import { Task, TaskTypeEnum } from './entities/task.entity.js';
 import { TaskPayload } from './interfaces/index.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
+import { CreateCreationTaskDto } from './dto/create-creation-task.dto.js';
 import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
 import { CreateMovementTaskDto } from './dto/create-movement-task.dto.js';
 import { TaskResource } from './resource/task.resource.js';
@@ -47,6 +49,7 @@ export class TasksService {
     private readonly filters: Filters,
     private readonly dateHandler: DateHandlerService,
     private readonly planificationsService: PlanificationsService,
+    private readonly photosService: PhotosService,
 
   ) {
     this.resource = new TaskResource(this.dateHandler);
@@ -88,6 +91,30 @@ export class TasksService {
 
       const payload = createNewTaskInactivationPayload(employee.pin, scheduled_at);
       const task = await this.saveScheduledTask(TaskTypeEnum.inactivate, payload, scheduled_at, planification, user);
+
+      return this.findOne(task.id);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.databaseHelpers.handleExeptions(error);
+    }
+  }
+
+  async createCreation(createCreationTaskDto: CreateCreationTaskDto, file: any, user: User) {
+    const { planification_id, pin, name, lastName, position_id, auth_dept_id, accLevelIds, scheduled_at } = createCreationTaskDto;
+
+    try {
+      const planification = await this.validateSchedule(planification_id, scheduled_at);
+
+      const isActive = await this.employeeService.existsByPin(pin);
+      if (isActive) throw new BadRequestException(`El código ${pin} ya pertenece a un empleado activo, utilice un movimiento`);
+
+      const { department, position } = await this.validateAssignment(auth_dept_id, position_id, accLevelIds);
+
+      // La foto es opcional; si no existe al ejecutar, el error queda en last_error
+      if (file) await this.photosService.upsert(pin, file, user);
+
+      const payload = createNewTaskPayload(name, lastName, pin, department.code, accLevelIds, position.id);
+      const task = await this.saveScheduledTask(TaskTypeEnum.creation, payload, scheduled_at, planification, user);
 
       return this.findOne(task.id);
     } catch (error) {

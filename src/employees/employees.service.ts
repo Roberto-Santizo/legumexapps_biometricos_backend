@@ -129,6 +129,10 @@ export class EmployeesService {
     return employee;
   }
 
+  async existsByPin(pin: string) {
+    return this.employeeRepository.existsBy({ pin });
+  }
+
   async findOneByPin(pin: string) {
     const employee = await this.employeeRepository.findOneBy({ pin });
     if (!employee) throw new NotFoundException(`El usuario con código ${pin} no existe`);
