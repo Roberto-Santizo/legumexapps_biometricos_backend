@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePlanificationDto } from './dto/create-planification.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { endOfISOWeek, getISOWeeksInYear, setISOWeek, startOfISOWeek } from 'date-fns';
@@ -40,13 +40,29 @@ export class PlanificationsService {
       await this.planificationRepository.save(planification);
 
       // Se recarga para obtener las fechas como 'YYYY-MM-DD' desde la base de datos
-      const saved = await this.planificationRepository.findOneByOrFail({ id: planification.id });
-
-      return PlanificationResource.planificationResource(saved);
+      return this.findOne(planification.id);
     } catch (error) {
       if (error instanceof HttpException) throw error;
       this.databaseHelpers.handleExeptions(error);
     }
+  }
+
+  async findOne(id: string) {
+    const planification = await this.findOneRaw(id);
+    return PlanificationResource.planificationResource(planification);
+  }
+
+  async findOneRaw(id: string) {
+    const planification = await this.planificationRepository.findOneBy({ id });
+    if (!planification) throw new NotFoundException(`La planificación con ID ${id} no existe`);
+    return planification;
+  }
+
+  async remove(id: string) {
+    const planification = await this.findOneRaw(id);
+    await this.planificationRepository.delete({ id: planification.id });
+
+    return `Planificación ${id} eliminada correctamente`;
   }
 
   // Calcula el lunes y domingo de la semana ISO en zona America/Guatemala
