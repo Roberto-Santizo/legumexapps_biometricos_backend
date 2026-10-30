@@ -77,8 +77,8 @@ export class EmployeesController {
   @ApiInternalServerErrorResponse({
     description: 'Error inesperado al crear el empleado ("Hubo un error")',
   })
-  create(@UploadedFile() file: any, @Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeesService.create(createEmployeeDto, file);
+  create(@UploadedFile() file: any, @Body() createEmployeeDto: CreateEmployeeDto, @GetUser() user: User) {
+    return this.employeesService.create(createEmployeeDto, file, user);
   }
 
   @Patch(':id')
@@ -123,8 +123,8 @@ export class EmployeesController {
   @ApiInternalServerErrorResponse({
     description: 'Error inesperado al actualizar el empleado ("Hubo un error")',
   })
-  update(@Param('id') id: string, @UploadedFile() file: any, @Body() updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeesService.update(id, updateEmployeeDto, file);
+  update(@Param('id') id: string, @UploadedFile() file: any, @Body() updateEmployeeDto: UpdateEmployeeDto, @GetUser() user: User) {
+    return this.employeesService.update(id, updateEmployeeDto, file, user);
   }
 
   @Get()
@@ -236,6 +236,26 @@ export class EmployeesController {
 
   @Delete(':pin')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @ApiOperation({
+    summary: 'Eliminar empleado permanentemente',
+    description: 'Busca el empleado por PIN, lo da de baja en ZKBioAccess (/person/leave) con tipo de baja 1 y la fecha actual, envía el correo de notificación ("Baja de Empleado") y luego elimina su registro de empleados inactivos.',
+  })
+  @ApiParam({
+    name: 'pin',
+    type: String,
+    description: 'PIN (código) del empleado en ZKBioAccess',
+    example: '10045',
+  })
+  @ApiOkResponse({
+    description: 'Empleado dado de baja permanentemente',
+    schema: { type: 'string', example: 'Empleado Dado de baja permanentemente' },
+  })
+  @ApiNotFoundResponse({
+    description: 'El usuario con código <pin> no existe, o el empleado con código <pin> no existe en empleados inactivos',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Error al dar de baja el empleado en ZKBioAccess ("Please check server logs")',
+  })
   remove(@Param('pin') pin: string, @GetUser() user: User) {
     return this.employeesService.remove(pin, user);
   }

@@ -21,6 +21,7 @@ import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 import { PositionService } from '../position/position.service.js';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 import { InactiveEmployeesService } from '../inactive-employees/inactive-employees.service.js';
+import { PhotosService } from '../photos/photos.service.js';
 
 @Injectable()
 export class EmployeesService {
@@ -38,19 +39,20 @@ export class EmployeesService {
     private readonly emailService: EmailService,
     private readonly positionService: PositionService,
     private readonly inactiveEmployeeService: InactiveEmployeesService,
+    private readonly photosService: PhotosService,
 
     @InjectDisk('photos')
     private readonly photos: StorageDisk,
   ) { }
 
-  async create(createEmployeeDto: CreateEmployeeDto, file: any) {
+  async create(createEmployeeDto: CreateEmployeeDto, file: any, user: User) {
     try {
       const exists = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
       if (exists) throw new BadRequestException(`El empleado con código ${createEmployeeDto.pin} ya existe`);
 
       const position = await this.positionService.validatePosition(createEmployeeDto.position_id);
 
-      await this.saveInZkBioaccess(createEmployeeDto, file);
+      await this.saveInZkBioaccess(createEmployeeDto, file, user);
 
       const employee = await this.findOneByPin(createEmployeeDto.pin);
       await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
@@ -63,14 +65,14 @@ export class EmployeesService {
     }
   }
 
-  async update(id: string, updateEmployeeDto: UpdateEmployeeDto, file: any) {
+  async update(id: string, updateEmployeeDto: UpdateEmployeeDto, file: any, user: User) {
     try {
       const employee = await this.employeeRepository.findOneBy({ id });
       if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
 
       const position = await this.positionService.validatePosition(updateEmployeeDto.position_id, employee.id);
 
-      await this.saveInZkBioaccess({ ...updateEmployeeDto, pin: employee.pin }, file);
+      await this.saveInZkBioaccess({ ...updateEmployeeDto, pin: employee.pin }, file, user);
 
       await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
 
@@ -82,7 +84,6 @@ export class EmployeesService {
     }
   }
 
-  // Usado por las tareas programadas: la posición se vuelve a validar al momento de ejecutar
   async createOrUpdateWithPosition(createEmployeeDto: CreateEmployeeDto, image?: string) {
     const current = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
     const position = await this.positionService.validatePosition(createEmployeeDto.position_id, current?.id);
@@ -132,7 +133,7 @@ export class EmployeesService {
     const employee = await this.findOneByPin(pin);
     await this.inactiveEmployeeById(employee.id, user);
     await this.inactiveEmployeeService.remove(pin);
-
+    await this.photos.delete(`${pin}.jpg`);
     return 'Empleado Dado de baja permanentemente';
   }
 
@@ -173,10 +174,12 @@ export class EmployeesService {
     }
   }
 
-  private async saveInZkBioaccess(createEmployeeDto: CreateEmployeeDto, file: any) {
+  private async saveInZkBioaccess(createEmployeeDto: CreateEmployeeDto, file: any, user: User) {
     const base64 = file ? imageToBase64(file) : undefined;
     const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, base64);
     if (!flag && file) throw new BadRequestException("Hubo un error al guardar la foto del empleado, asegurese que el rostro aparezca dentro de la misma");
-    if (file) await this.photos.put(`${createEmployeeDto.pin}.jpg`, file.buffer, { contentType: file.mimetype });
+    if (file) {
+      await this.photosService.create({ code: createEmployeeDto.pin }, user, file);
+    }
   }
 }
