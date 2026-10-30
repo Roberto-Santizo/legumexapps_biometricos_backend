@@ -40,6 +40,12 @@ export class InactiveEmployeesService {
     return InactiveEmployeeResource.inactiveEmployeeDetailResource(inactiveEmployee);
   }
 
+  async findOneByPin(pin: string) {
+    const inactiveEmployee = await this.inactiveEmployeeRepository.findOne({ where: { pin } });
+    if (!inactiveEmployee) throw new NotFoundException(`El empleado con código ${pin} no existe`);
+    return inactiveEmployee;
+  }
+
   async reActivateEmployeeById(id: string) {
     try {
       const employee = await this.findOne(id);
@@ -48,5 +54,10 @@ export class InactiveEmployeesService {
     } catch (error) {
       this.databaseHelpers.handleExeptions(error);
     }
+  }
+
+  async remove(pin: string) {
+    const inactiveEmployee = await this.findOneByPin(pin);
+    await this.inactiveEmployeeRepository.delete({ id: inactiveEmployee.id });
   }
 }

@@ -1,15 +1,16 @@
+import { AccLevelModule } from '../acc-level/acc-level.module.js';
 import { AuthDepartmentModule } from '../auth-department/auth-department.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { CommonModule } from '../common/common.module.js';
 import { Employee } from './entities/employee.entity.js';
 import { EmployeesController } from './employees.controller.js';
 import { EmployeesService } from './employees.service.js';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
+import { InactiveEmployeesModule } from '../inactive-employees/inactive-employees.module.js';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AccLevelModule } from '../acc-level/acc-level.module.js';
-import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 import { PositionModule } from '../position/position.module.js';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { PositionModule } from '../position/position.module.js';
     AuthDepartmentModule,
     AuthModule,
     CommonModule,
-    PositionModule
+    PositionModule,
+    forwardRef(() => InactiveEmployeesModule)
   ],
   controllers: [EmployeesController],
   providers: [EmployeesService, ZkBioaccessService],

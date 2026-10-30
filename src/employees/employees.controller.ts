@@ -1,21 +1,21 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Patch, Body, Param, Query, UseInterceptors, UploadedFile, BadRequestException, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseInterceptors, UploadedFile, BadRequestException, Req, Res, Delete } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import {
-    ApiBadRequestResponse,
-    ApiBearerAuth,
-    ApiBody,
-    ApiConsumes,
-    ApiCreatedResponse,
-    ApiForbiddenResponse,
-    ApiInternalServerErrorResponse,
-    ApiNotFoundResponse,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiProduces,
-    ApiTags,
-    ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiProduces,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
@@ -232,5 +232,11 @@ export class EmployeesController {
   updateEmployeePhoto(@UploadedFile() file: any, @Param('pin') id: string) {
     if (!file) throw new BadRequestException("Make sure that the file exists and is an image");
     return this.employeesService.updateEmployeePhoto(id, file);
+  }
+
+  @Delete(':pin')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  remove(@Param('pin') pin: string, @GetUser() user: User) {
+    return this.employeesService.remove(pin, user);
   }
 }

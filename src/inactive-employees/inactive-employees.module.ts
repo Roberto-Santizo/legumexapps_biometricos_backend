@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { InactiveEmployeesService } from './inactive-employees.service.js';
 import { InactiveEmployeesController } from './inactive-employees.controller.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -17,10 +17,11 @@ import { EmployeesModule } from '../employees/employees.module.js';
     AuthModule,
     CommonModule,
     AuthDepartmentModule,
-    EmployeesModule
+    forwardRef(() => EmployeesModule)
   ],
   exports:[
     TypeOrmModule,
+    InactiveEmployeesService,
   ]
 })
 export class InactiveEmployeesModule { }

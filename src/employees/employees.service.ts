@@ -20,6 +20,7 @@ import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 import { PositionService } from '../position/position.service.js';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
+import { InactiveEmployeesService } from '../inactive-employees/inactive-employees.service.js';
 
 @Injectable()
 export class EmployeesService {
@@ -36,6 +37,7 @@ export class EmployeesService {
     private readonly zkBioaccessService: ZkBioaccessService,
     private readonly emailService: EmailService,
     private readonly positionService: PositionService,
+    private readonly inactiveEmployeeService: InactiveEmployeesService,
 
     @InjectDisk('photos')
     private readonly photos: StorageDisk,
@@ -124,6 +126,14 @@ export class EmployeesService {
     const employee = await this.employeeRepository.findOneBy({ pin });
     if (!employee) throw new NotFoundException(`El usuario con código ${pin} no existe`);
     return employee;
+  }
+
+  async remove(pin: string, user: User) {
+    const employee = await this.findOneByPin(pin);
+    await this.inactiveEmployeeById(employee.id, user);
+    await this.inactiveEmployeeService.remove(pin);
+
+    return 'Empleado Dado de baja permanentemente';
   }
 
   async updateEmployeePhoto(pin: string, file: any) {
