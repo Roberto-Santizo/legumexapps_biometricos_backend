@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
+import { InactivationField } from '../interfaces/index.js';
 
 // Campos de payload no aplicables al tipo de la tarea devuelven 400
 export class UpdateTaskDto {
@@ -38,4 +39,9 @@ export class UpdateTaskDto {
     @IsOptional()
     @IsString()
     lastName?: string;
+
+    @ApiPropertyOptional({ description: 'Nuevo tipo de baja (solo baja)', enum: InactivationField, example: InactivationField.TEMP })
+    @IsOptional()
+    @IsEnum(InactivationField)
+    type?: InactivationField;
 }

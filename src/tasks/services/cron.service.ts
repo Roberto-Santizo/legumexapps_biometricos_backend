@@ -1,4 +1,4 @@
-import { CreationPayload, InactivatePayload, MovementPayload } from '../interfaces/index.js';
+import { CreationPayload, InactivatePayload, InactivationField, MovementPayload } from '../interfaces/index.js';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DateHandlerService } from '../../common/services/date-handler.service.js';
 import { EmployeesService } from '../../employees/employees.service.js';
@@ -119,16 +119,16 @@ export class CronService {
         let last_error = '';
 
         try {
-            await this.employeesService.findOneByPin(task.pin);
-
+            const employee = await this.employeesService.findOneByPin(task.pin);
             const data = task.payload as InactivatePayload;
-            const flag = await this.zbioaccessService.inactivateEmployee({
-                pin: data.pin,
-                leaveDate: this.dateService.getCurrentDate(),
-                leaveType: data.leaveType
-            });
 
-            if (flag) taskStatus = TaskStatusEnum.completed;
+            if (data.inactivationType === InactivationField.PERMANENT) {
+                await this.employeesService.remove(employee.pin, task.created_by);
+            } else {
+                await this.employeesService.inactiveEmployeeById(employee.id, task.created_by);
+            }
+
+            taskStatus = TaskStatusEnum.completed;
         } catch (error) {
             taskStatus = TaskStatusEnum.failed;
             last_error = error?.toString() ?? 'Error al realizar la baja';

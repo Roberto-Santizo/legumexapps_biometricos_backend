@@ -149,7 +149,7 @@ export class TasksController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Programar baja',
-    description: 'Crea una tarea de baja (`baja`, `pendiente`) dentro de una planificación con payload `{ pin, leaveType: 1, leaveDate: scheduled_at }`. `scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. '
+    description: 'Crea una tarea de baja (`baja`, `pendiente`) dentro de una planificación con payload `{ pin, leaveType: 1, leaveDate: scheduled_at, inactivationType: type }` (`type`: PERMANENTE o TEMPORAL). `scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. '
       + 'La existencia del empleado se valida al ejecutar (si no existe, la tarea queda `fallida` con `last_error`).',
   })
   @ApiCreatedResponse({ description: 'Baja programada', type: TaskResponse })

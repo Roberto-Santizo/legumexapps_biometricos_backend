@@ -11,7 +11,6 @@ export interface CreationPayload {
 
 export interface MovementPayload {
     pin: string;
-    // Opcionales: en tareas individuales se toman del empleado al ejecutar
     name?: string;
     lastName?: string;
     position: string;
@@ -20,10 +19,16 @@ export interface MovementPayload {
     accLevelIds: string;
 }
 
+export enum InactivationField {
+    PERMANENT = 'PERMANENTE',
+    TEMP = 'TEMPORAL'
+}
+
 export interface InactivatePayload {
     pin: string;
     leaveType: number;
     leaveDate: string;
+    inactivationType: InactivationField;
 }
 
 export interface TaskResourceInterface {

@@ -15,7 +15,7 @@ import { PlanificationsService } from '../planifications/planifications.service.
 import { PhotosService } from '../photos/photos.service.js';
 import { PositionService } from '../position/position.service.js';
 import { Task, TaskStatusEnum, TaskTypeEnum } from './entities/task.entity.js';
-import { CreationPayload, MovementPayload, TaskPayload } from './interfaces/index.js';
+import { CreationPayload, InactivatePayload, MovementPayload, TaskPayload } from './interfaces/index.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
 import { CreateCreationTaskDto } from './dto/create-creation-task.dto.js';
 import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
@@ -111,12 +111,12 @@ export class TasksService {
   }
 
   async createInactivation(createInactivationTaskDto: CreateInactivationTaskDto, user: User) {
-    const { planification_id, pin, scheduled_at } = createInactivationTaskDto;
+    const { planification_id, pin, scheduled_at, type } = createInactivationTaskDto;
 
     try {
       const planification = await this.validateSchedule(planification_id, scheduled_at);
 
-      const payload = createNewTaskInactivationPayload(pin, scheduled_at);
+      const payload = createNewTaskInactivationPayload(pin, scheduled_at, type);
       const task = await this.saveScheduledTask(TaskTypeEnum.inactivate, payload, scheduled_at, planification, user);
 
       return this.findOne(task.id);
@@ -271,9 +271,9 @@ export class TasksService {
     const batch = this.idGenerator.generate32CaracterId();
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const { code, scheduledAt } = getInactivationTaskRowValues(worksheet.getRow(rowNumber));
+      const { code, scheduledAt, type } = getInactivationTaskRowValues(worksheet.getRow(rowNumber));
       await this.validateInactivationFields(code);
-      const payload = createNewTaskInactivationPayload(code, scheduledAt)
+      const payload = createNewTaskInactivationPayload(code, scheduledAt, type)
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.inactivate, user, queryRunner);
     }
 
@@ -353,17 +353,19 @@ export class TasksService {
     const allowedByType: Record<TaskTypeEnum, (keyof UpdateTaskDto)[]> = {
       [TaskTypeEnum.creation]: ['position_id', 'auth_dept_id', 'accLevelIds', 'name', 'lastName'],
       [TaskTypeEnum.movement]: ['position_id', 'auth_dept_id', 'accLevelIds'],
-      [TaskTypeEnum.inactivate]: [],
+      [TaskTypeEnum.inactivate]: ['type'],
     };
-    const payloadFields: (keyof UpdateTaskDto)[] = ['position_id', 'auth_dept_id', 'accLevelIds', 'name', 'lastName'];
+    const payloadFields: (keyof UpdateTaskDto)[] = ['position_id', 'auth_dept_id', 'accLevelIds', 'name', 'lastName', 'type'];
 
     const invalid = payloadFields.filter(field => updateTaskDto[field] !== undefined && !allowedByType[type].includes(field));
     if (invalid.length > 0) throw new BadRequestException(`Los campos ${invalid.join(', ')} no aplican a una tarea de tipo ${type}`);
   }
 
-  // Recalcula el payload con los valores finales (enviados o actuales)
   private async recalculatePayload(task: Task, updateTaskDto: UpdateTaskDto, scheduledAt: string): Promise<TaskPayload> {
-    if (task.type === TaskTypeEnum.inactivate) return createNewTaskInactivationPayload(task.pin, scheduledAt);
+    if (task.type === TaskTypeEnum.inactivate) {
+      const type = updateTaskDto.type ?? (task.payload as InactivatePayload).inactivationType;
+      return createNewTaskInactivationPayload(task.pin, scheduledAt, type);
+    }
 
     const current = task.payload as CreationPayload | MovementPayload;
     const department = updateTaskDto.auth_dept_id

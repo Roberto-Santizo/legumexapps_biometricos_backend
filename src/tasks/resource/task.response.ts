@@ -31,7 +31,7 @@ export class TaskResponse implements TaskResourceInterface {
     pin: string;
 
     @ApiProperty({
-        description: 'Datos a enviar a ZKBioAccess. Según el tipo: alta { pin, name, lastName, deptCode, accLevelIds }, movimiento { pin, position, deptCode, accLevelIds } o baja { pin, leaveType, leaveDate }',
+        description: 'Datos a enviar a ZKBioAccess. Según el tipo: alta { pin, name, lastName, deptCode, accLevelIds }, movimiento { pin, position, deptCode, accLevelIds } o baja { pin, leaveType, leaveDate, inactivationType }',
         type: 'object',
         additionalProperties: true,
         example: { pin: '10045', position: 'Operario', deptCode: 'PROD01', accLevelIds: '4028898594b7f9660194b7fb5d7a0430' },
