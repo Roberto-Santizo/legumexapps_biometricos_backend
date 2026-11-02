@@ -125,10 +125,10 @@ export class EmployeesService {
     return employees;
   }
 
-  async findOne(id: string) {
-    const employee = await this.employeeRepository.findOne({ where: { id }, relations: { position: true } });
+  async findOne(pin: string) {
+    const employee = await this.employeeRepository.findOne({ where: { pin }, relations: { position: true } });
 
-    if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
+    if (!employee) throw new NotFoundException(`El usuario con CÓDIGO ${pin} no existe`);
 
     return EmployeeResource.employeeList(employee);
   }
@@ -175,7 +175,7 @@ export class EmployeesService {
 
   async inactiveEmployeeById(id: string, user: User) {
     try {
-      const employee = await this.findOne(id);
+      const employee = await this.findOneRaw(id);
       await this.zkBioaccessService.inactivateEmployee({ pin: employee.pin, leaveType: 1, leaveDate: this.dateHandler.getCurrentDate() });
 
       this.emailService.sendMail('Baja de Empleado', inactivateEmployeeEmail({
@@ -184,7 +184,7 @@ export class EmployeesService {
         name: employee.name,
         leave_date: this.dateHandler.getCurrentDate(),
         created_at: this.dateHandler.getCurrentDate(),
-        department: employee.department,
+        department: employee.authDepartment.name,
         updater_name: user.name,
         updater_username: user.email
       }))

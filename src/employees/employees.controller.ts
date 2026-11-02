@@ -139,22 +139,22 @@ export class EmployeesController {
     return this.employeesService.findAll(employeesQueryDto);
   }
 
-  @Get(':id')
+  @Get(':code')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Obtener empleado',
-    description: 'Devuelve los datos de un empleado por su ID, incluyendo su departamento y el código e ID de su posición.',
+    description: 'Devuelve los datos de un empleado por su PIN (código), incluyendo su departamento y el código e ID de su posición.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'code',
     type: String,
-    description: 'ID del empleado (32 caracteres)',
-    example: '4028898594b7f9660194b7fb5d7a0500',
+    description: 'PIN (código) del empleado en ZKBioAccess',
+    example: 'LEG0001',
   })
   @ApiOkResponse({ description: 'Empleado encontrado', type: EmployeeListResponse })
-  @ApiNotFoundResponse({ description: 'El usuario con ID <id> no existe' })
-  findOne(@Param('id') id: string) {
-    return this.employeesService.findOne(id);
+  @ApiNotFoundResponse({ description: 'El usuario con CÓDIGO <code> no existe' })
+  findOne(@Param('code') code: string) {
+    return this.employeesService.findOne(code);
   }
 
   @Get('/levels/getEmployeeLevels/:id')
