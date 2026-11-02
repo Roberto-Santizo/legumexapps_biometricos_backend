@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { DateHandlerService } from '../../common/services/date-handler.service.js';
 import { EmployeesService } from '../../employees/employees.service.js';
 import { imageBufferToBase64 } from '../../common/helpers/base-64-enconder.js';
-import { In, Repository } from 'typeorm';
+import { In, LessThanOrEqual, Repository } from 'typeorm';
 import { InactiveEmployee } from '../../inactive-employees/entities/inactive-employee.entity.js';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,10 +12,13 @@ import { PhotosService } from '../../photos/photos.service.js';
 import { Task, TaskStatusEnum, TaskTypeEnum } from '../../tasks/entities/task.entity.js';
 import { ZkBioaccessService } from '../../employees/services/zkbioaccess.service.js';
 
+const TIME_ZONE = 'America/Guatemala';
+const DATE_PATTERN = 'yyyy-MM-dd';
+
 @Injectable()
 export class CronService {
     private readonly logger = new Logger(CronService.name);
-    private inactiveEmployeesByCode: Map<string, InactiveEmployee>;
+    private inactiveEmployeesByCode: Map<string, InactiveEmployee> = new Map();
 
     constructor(
         @InjectRepository(Task)
@@ -32,16 +35,26 @@ export class CronService {
         private readonly dateService: DateHandlerService
     ) { }
 
-    @Cron('0 0 5 * * *', { timeZone: 'America/Guatemala' })
-    // @Cron(CronExpression.EVERY_10_SECONDS)
+    // @Cron('0 0 5 * * *', { timeZone: TIME_ZONE })
+    @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: TIME_ZONE })
     async executeTasks() {
-        const tasksPending = await this.taskRepository.find({ where: { status: TaskStatusEnum.pending } });
+        const today = this.getToday();
+        const tasksPending = await this.taskRepository.find({
+            where: { status: TaskStatusEnum.pending, scheduled_at: LessThanOrEqual(today as unknown as Date) },
+            order: { scheduled_at: 'ASC', created_at: 'ASC' },
+        });
+
+        if (tasksPending.length === 0) {
+            this.logger.debug(`Sin tareas programadas para ${today}`);
+            return;
+        }
+
         const pins = [...new Set(tasksPending.map((r) => r.pin))];
         const inactiveEmployees = await this.inactiveEmployeeRepository.find({ where: { pin: In(pins) } });
 
         this.inactiveEmployeesByCode = new Map(inactiveEmployees.map((employee) => [employee.pin, employee]));
 
-        tasksPending.map(async task => {
+        for (const task of tasksPending) {
             switch (task.type) {
                 case TaskTypeEnum.creation:
                     await this.executeCreationTask(task);
@@ -55,12 +68,14 @@ export class CronService {
                 default:
                     break;
             }
-        });
+        }
 
-        this.logger.debug(`Tarea ejecutada correctamente ${this.dateService.getCurrentDate()}`);
+        this.logger.debug(`${tasksPending.length} tareas ejecutadas (scheduled_at <= ${today}) ${this.dateService.getCurrentDate(DATE_PATTERN + ' HH:mm:ss')}`);
     }
 
     async executeMovementTask(task: Task) {
+        if (!this.isDue(task)) return;
+
         let taskStatus = TaskStatusEnum.pending;
         let last_error = '';
 
@@ -81,11 +96,13 @@ export class CronService {
             last_error = error?.toString() ?? 'Error al realizar el movimiento';
             this.debugError(error);
         } finally {
-            await this.taskRepository.update(task.id, { status: taskStatus, last_error });
+            await this.finishTask(task, taskStatus, last_error);
         }
     }
 
     async executeInactiveTask(task: Task) {
+        if (!this.isDue(task)) return;
+
         let taskStatus = TaskStatusEnum.pending;
         let last_error = '';
 
@@ -103,17 +120,19 @@ export class CronService {
             last_error = error?.toString() ?? 'Error al realizar la baja';
             this.debugError(error);
         } finally {
-            await this.taskRepository.update(task.id, { status: taskStatus, last_error });
+            await this.finishTask(task, taskStatus, last_error);
         }
     }
 
     async executeCreationTask(task: Task) {
+        if (!this.isDue(task)) return;
+
         let taskStatus = TaskStatusEnum.pending;
         let last_error = '';
 
         try {
             const inactiveEmployeeExists = this.inactiveEmployeesByCode.get(task.pin);
-            if (inactiveEmployeeExists) this.zbioaccessService.reActivateEmployee(task.pin);
+            if (inactiveEmployeeExists) await this.zbioaccessService.reActivateEmployee(task.pin);
 
             const data = task.payload as CreationPayload;
 
@@ -134,8 +153,31 @@ export class CronService {
             taskStatus = TaskStatusEnum.failed;
             last_error = error?.toString() ?? 'Error al crear el alta';
         } finally {
-            await this.taskRepository.update(task.id, { status: taskStatus, last_error });
+            await this.finishTask(task, taskStatus, last_error);
         }
+    }
+
+    private getToday(): string {
+        return this.dateService.getCurrentDate(DATE_PATTERN);
+    }
+
+    private isDue(task: Task): boolean {
+        if (task.status !== TaskStatusEnum.pending || !task.scheduled_at) return false;
+
+        const scheduledAt = String(task.scheduled_at).slice(0, 10);
+        if (scheduledAt <= this.getToday()) return true;
+
+        this.logger.debug(`Tarea ${task.id} omitida: programada para ${scheduledAt}`);
+        return false;
+    }
+
+    private async finishTask(task: Task, status: TaskStatusEnum, last_error: string) {
+        await this.taskRepository.update(task.id, {
+            status,
+            last_error,
+            executed_at: this.dateService.getCurrentDate(),
+            attempts: task.attempts + 1,
+        });
     }
 
     private debugError(error: any) {

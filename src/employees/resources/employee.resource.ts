@@ -9,6 +9,9 @@ export class EmployeeResource {
 
     static employeeList(employee: Employee): EmployeeList {
         const hasPhoto = employee.photo_path ? true : false;
+        const hasDepartment = employee.authDepartment ? true : false;
+
+
         return {
             id: employee.id,
             name: employee.name,
@@ -16,8 +19,8 @@ export class EmployeeResource {
             pin: employee.pin,
             createdBy: employee.creater_name,
             updatedBy: employee.updater_name,
-            department: employee.authDepartment.name,
-            departmentCode: employee.authDepartment.code,
+            department: hasDepartment ? employee.authDepartment.name : '',
+            departmentCode:  hasDepartment ? employee.authDepartment.code : '',
             hasPhoto: hasPhoto,
             photoUrl: hasPhoto ? this.getPhotoUrl(employee.pin) : '',
             position: employee.position ? employee.position.code : 'Sin posición asignada',
