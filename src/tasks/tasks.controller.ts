@@ -129,8 +129,9 @@ export class TasksController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Programar movimiento',
-    description: 'Crea una tarea de movimiento (`movimiento`, `pendiente`) dentro de una planificación, cambiando posición, departamento y niveles de acceso del empleado. `previous` guarda los datos actuales del empleado. '
-      + '`scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. La disponibilidad de la posición se valida al ejecutar.',
+    description: 'Crea una tarea de movimiento (`movimiento`, `pendiente`) dentro de una planificación, cambiando posición, departamento y niveles de acceso del empleado indicado por `pin`. '
+      + '`scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. Al ejecutar se valida que el empleado exista (si no, la tarea queda `fallida` con `last_error`), '
+      + 'se guardan sus datos actuales en `previous` y se valida la disponibilidad de la posición.',
   })
   @ApiCreatedResponse({ description: 'Movimiento programado', type: TaskResponse })
   @ApiBadRequestResponse({
@@ -138,7 +139,7 @@ export class TasksController {
   })
   @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
   @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })
-  @ApiNotFoundResponse({ description: 'No existe la planificación, el empleado, el departamento, la posición o alguno de los niveles de acceso' })
+  @ApiNotFoundResponse({ description: 'No existe la planificación, el departamento, la posición o alguno de los niveles de acceso' })
   createMovement(@Body() createMovementTaskDto: CreateMovementTaskDto, @GetUser() user: User) {
     return this.tasksService.createMovement(createMovementTaskDto, user);
   }
@@ -148,7 +149,8 @@ export class TasksController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Programar baja',
-    description: 'Crea una tarea de baja (`baja`, `pendiente`) dentro de una planificación con payload `{ pin, leaveType: 1, leaveDate: scheduled_at }`. `scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación.',
+    description: 'Crea una tarea de baja (`baja`, `pendiente`) dentro de una planificación con payload `{ pin, leaveType: 1, leaveDate: scheduled_at }`. `scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. '
+      + 'La existencia del empleado se valida al ejecutar (si no existe, la tarea queda `fallida` con `last_error`).',
   })
   @ApiCreatedResponse({ description: 'Baja programada', type: TaskResponse })
   @ApiBadRequestResponse({
@@ -156,7 +158,7 @@ export class TasksController {
   })
   @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
   @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })
-  @ApiNotFoundResponse({ description: 'No existe la planificación o el empleado' })
+  @ApiNotFoundResponse({ description: 'No existe la planificación' })
   createInactivation(@Body() createInactivationTaskDto: CreateInactivationTaskDto, @GetUser() user: User) {
     return this.tasksService.createInactivation(createInactivationTaskDto, user);
   }

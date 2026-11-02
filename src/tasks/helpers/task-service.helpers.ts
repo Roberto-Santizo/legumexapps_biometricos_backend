@@ -42,7 +42,7 @@ export const createNewTaskPayload = (name: string, lastName: string, pin: string
     return { name, lastName, pin, deptCode, accLevelIds, position_id };
 }
 
-export const createNewTaskMovementPayload = (position: string, pin: string, deptCode: string, accLevelIds: string, name: string, lastName: string, position_id: string): MovementPayload => {
+export const createNewTaskMovementPayload = (position: string, pin: string, deptCode: string, accLevelIds: string, position_id: string, name?: string, lastName?: string): MovementPayload => {
     return { pin, deptCode, accLevelIds, position, name, lastName, position_id };
 }
 

@@ -11,8 +11,9 @@ export interface CreationPayload {
 
 export interface MovementPayload {
     pin: string;
-    name: string;
-    lastName: string;
+    // Opcionales: en tareas individuales se toman del empleado al ejecutar
+    name?: string;
+    lastName?: string;
     position: string;
     position_id: string;
     deptCode: string;

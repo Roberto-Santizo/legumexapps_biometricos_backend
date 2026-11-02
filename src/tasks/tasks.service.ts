@@ -90,7 +90,6 @@ export class TasksService {
         : task.planification;
 
       this.validateScheduledAtNotPast(scheduledAt);
-      // Tareas de Excel sin planificación: no hay semana contra la cual validar
       if (planification) this.validateScheduledAtInWeek(scheduledAt, planification);
 
       const payload = await this.recalculatePayload(task, updateTaskDto, scheduledAt);
@@ -112,13 +111,12 @@ export class TasksService {
   }
 
   async createInactivation(createInactivationTaskDto: CreateInactivationTaskDto, user: User) {
-    const { planification_id, employee_id, scheduled_at } = createInactivationTaskDto;
+    const { planification_id, pin, scheduled_at } = createInactivationTaskDto;
 
     try {
       const planification = await this.validateSchedule(planification_id, scheduled_at);
-      const employee = await this.employeeService.findOneRaw(employee_id);
 
-      const payload = createNewTaskInactivationPayload(employee.pin, scheduled_at);
+      const payload = createNewTaskInactivationPayload(pin, scheduled_at);
       const task = await this.saveScheduledTask(TaskTypeEnum.inactivate, payload, scheduled_at, planification, user);
 
       return this.findOne(task.id);
@@ -155,17 +153,16 @@ export class TasksService {
   }
 
   async createMovement(createMovementTaskDto: CreateMovementTaskDto, user: User) {
-    const { planification_id, employee_id, position_id, auth_dept_id, accLevelIds, scheduled_at } = createMovementTaskDto;
+    const { planification_id, pin, position_id, auth_dept_id, accLevelIds, scheduled_at } = createMovementTaskDto;
 
     try {
       const planification = await this.validateSchedule(planification_id, scheduled_at);
-      const employee = await this.employeeService.findOneRaw(employee_id);
       const department = await this.validateAssignment(auth_dept_id, accLevelIds);
       const position = await this.validatePosition(position_id);
 
-      const payload = createNewTaskMovementPayload(position.code, employee.pin, department.code, accLevelIds, employee.name, employee.last_name, position.id);
-      const previous = formatEmployeeEntity(employee);
-      const task = await this.saveScheduledTask(TaskTypeEnum.movement, payload, scheduled_at, planification, user, previous);
+      // El empleado se busca por PIN al ejecutar la tarea (nombre y `previous` se toman ahí)
+      const payload = createNewTaskMovementPayload(position.code, pin, department.code, accLevelIds, position.id);
+      const task = await this.saveScheduledTask(TaskTypeEnum.movement, payload, scheduled_at, planification, user);
 
       return this.findOne(task.id);
     } catch (error) {
@@ -262,7 +259,7 @@ export class TasksService {
       const { department, accLevel, employee } = await this.validateMovementFields(deptCode, accLevelName, code);
       // La disponibilidad de la posición se valida al ejecutar la tarea
       const positionEntity = await this.positionService.findOneRawByCode(String(position));
-      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, employee.name, employee.last_name, positionEntity.id);
+      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, positionEntity.id, employee.name, employee.last_name);
       const previous = formatEmployeeEntity(employee);
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.movement, user, queryRunner, previous);
     }
@@ -378,8 +375,8 @@ export class TasksService {
 
     if (task.type === TaskTypeEnum.movement) {
       const position = await this.validatePosition(positionId);
-      const employee = await this.employeeService.findOneByPin(task.pin);
-      return createNewTaskMovementPayload(position.code, employee.pin, department.code, accLevelIds, employee.name, employee.last_name, position.id);
+      const { name, lastName } = current as MovementPayload;
+      return createNewTaskMovementPayload(position.code, task.pin, department.code, accLevelIds, position.id, name, lastName);
     }
 
     const name = updateTaskDto.name ?? (current as CreationPayload).name;

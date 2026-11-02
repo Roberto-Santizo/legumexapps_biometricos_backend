@@ -114,8 +114,7 @@ export class PlanificationsService {
 
     return `Planificación ${id} eliminada correctamente`;
   }
-
-  // Cuenta las tareas de cada planificación agrupando por tipo y estado
+  
   private async getTaskCounts(planificationIds: string[]) {
     const counts = new Map<string, PlanificationCounts>();
     if (planificationIds.length === 0) return counts;
@@ -154,9 +153,7 @@ export class PlanificationsService {
     };
   }
 
-  // Calcula el lunes y domingo de la semana ISO en zona America/Guatemala
   private getISOWeekRange(year: number, week: number) {
-    // El 4 de enero siempre pertenece a la semana 1 del año ISO
     const reference = new TZDate(year, 0, 4, TIME_ZONE);
 
     if (week > getISOWeeksInYear(reference)) {

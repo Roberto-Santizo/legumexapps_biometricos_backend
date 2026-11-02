@@ -2,6 +2,7 @@ import { CreationPayload, InactivatePayload, MovementPayload } from '../interfac
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DateHandlerService } from '../../common/services/date-handler.service.js';
 import { EmployeesService } from '../../employees/employees.service.js';
+import { formatEmployeeEntity } from '../helpers/task-service.helpers.js';
 import { imageBufferToBase64 } from '../../common/helpers/base-64-enconder.js';
 import { In, LessThanOrEqual, Repository } from 'typeorm';
 import { InactiveEmployee } from '../../inactive-employees/entities/inactive-employee.entity.js';
@@ -78,15 +79,21 @@ export class CronService {
 
         let taskStatus = TaskStatusEnum.pending;
         let last_error = '';
+        let previous: Record<string, unknown> | undefined;
 
         try {
+            // Valida que el empleado exista al momento de ejecutar
+            const employee = await this.employeesService.findOneByPin(task.pin);
+            // Tareas individuales no guardan `previous` al crearse; se toma antes de mover
+            if (!task.previous) previous = formatEmployeeEntity(employee);
+
             const data = task.payload as MovementPayload;
             const flag = await this.employeesService.createOrUpdateWithPosition({
                 pin: data.pin,
                 deptCode: data.deptCode,
                 accLevelIds: data.accLevelIds,
-                name: data.name,
-                lastName: data.lastName,
+                name: employee.name,
+                lastName: employee.last_name,
                 position_id: data.position_id
             });
 
@@ -96,7 +103,7 @@ export class CronService {
             last_error = error?.toString() ?? 'Error al realizar el movimiento';
             this.debugError(error);
         } finally {
-            await this.finishTask(task, taskStatus, last_error);
+            await this.finishTask(task, taskStatus, last_error, previous);
         }
     }
 
@@ -107,6 +114,9 @@ export class CronService {
         let last_error = '';
 
         try {
+            // Valida que el empleado exista al momento de ejecutar
+            await this.employeesService.findOneByPin(task.pin);
+
             const data = task.payload as InactivatePayload;
             const flag = await this.zbioaccessService.inactivateEmployee({
                 pin: data.pin,
@@ -171,12 +181,14 @@ export class CronService {
         return false;
     }
 
-    private async finishTask(task: Task, status: TaskStatusEnum, last_error: string) {
-        await this.taskRepository.update(task.id, {
+    private async finishTask(task: Task, status: TaskStatusEnum, last_error: string, previous?: Record<string, unknown>) {
+        await this.taskRepository.save({
+            id: task.id,
             status,
             last_error,
             executed_at: this.dateService.getCurrentDate(),
             attempts: task.attempts + 1,
+            ...(previous && { previous }),
         });
     }
 
