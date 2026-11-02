@@ -131,7 +131,7 @@ export class EmployeesController {
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
     summary: 'Listar empleados',
-    description: 'Devuelve los empleados paginados (con su departamento y el código e ID de su posición), con filtro opcional por nombre (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
+    description: 'Devuelve los empleados paginados (con su departamento y el código e ID de su posición), con filtros opcionales por nombre, PIN e ID de departamento (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
   })
   @ApiPaginatedResponse(EmployeeListResponse, 'Listado paginado de empleados')
   @ApiBadRequestResponse({ description: 'Parámetros de consulta inválidos o no permitidos' })

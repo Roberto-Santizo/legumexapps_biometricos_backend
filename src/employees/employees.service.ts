@@ -50,7 +50,6 @@ export class EmployeesService {
       const exists = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
       if (exists) throw new BadRequestException(`El empleado con código ${createEmployeeDto.pin} ya existe`);
 
-      // La posición es opcional; solo se valida y asigna si se envía
       const position = createEmployeeDto.position_id
         ? await this.positionService.validatePosition(createEmployeeDto.position_id)
         : null;
@@ -109,7 +108,7 @@ export class EmployeesService {
 
   async findAll(employeesQueryDto: EmployeesQueryDto) {
     const { limit = 10, offset = 0 } = employeesQueryDto;
-    const where = this.filters.buildWhere<Employee, EmployeesQueryDto>(employeesQueryDto, { like: ['name'] });
+    const where = this.filters.buildWhere<Employee, EmployeesQueryDto>(employeesQueryDto, { like: ['name', 'auth_dept_id', 'pin'] });
 
     const [employees, total] = await this.employeeRepository.findAndCount({
       take: limit,
