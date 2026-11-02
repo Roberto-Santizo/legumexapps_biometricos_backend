@@ -16,6 +16,12 @@ import { ZkBioaccessService } from '../../employees/services/zkbioaccess.service
 const TIME_ZONE = 'America/Guatemala';
 const DATE_PATTERN = 'yyyy-MM-dd';
 
+const TASK_TYPE_ORDER: Record<TaskTypeEnum, number> = {
+    [TaskTypeEnum.creation]: 1,
+    [TaskTypeEnum.inactivate]: 2,
+    [TaskTypeEnum.movement]: 3,
+};
+
 @Injectable()
 export class CronService {
     private readonly logger = new Logger(CronService.name);
@@ -36,7 +42,6 @@ export class CronService {
         private readonly dateService: DateHandlerService
     ) { }
 
-    // @Cron('0 0 5 * * *', { timeZone: TIME_ZONE })
     @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: TIME_ZONE })
     async executeTasks() {
         const today = this.getToday();
@@ -54,6 +59,8 @@ export class CronService {
         const inactiveEmployees = await this.inactiveEmployeeRepository.find({ where: { pin: In(pins) } });
 
         this.inactiveEmployeesByCode = new Map(inactiveEmployees.map((employee) => [employee.pin, employee]));
+
+        tasksPending.sort((a, b) => TASK_TYPE_ORDER[a.type] - TASK_TYPE_ORDER[b.type]);
 
         for (const task of tasksPending) {
             switch (task.type) {
@@ -82,9 +89,7 @@ export class CronService {
         let previous: Record<string, unknown> | undefined;
 
         try {
-            // Valida que el empleado exista al momento de ejecutar
             const employee = await this.employeesService.findOneByPin(task.pin);
-            // Tareas individuales no guardan `previous` al crearse; se toma antes de mover
             if (!task.previous) previous = formatEmployeeEntity(employee);
 
             const data = task.payload as MovementPayload;
@@ -114,7 +119,6 @@ export class CronService {
         let last_error = '';
 
         try {
-            // Valida que el empleado exista al momento de ejecutar
             await this.employeesService.findOneByPin(task.pin);
 
             const data = task.payload as InactivatePayload;
