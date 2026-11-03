@@ -4,7 +4,8 @@ import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { EmployeesService } from '../employees/employees.service.js';
 import { Filters } from '../common/providers/filters.js';
 import { FindOptionsWhere, IsNull, Not, Repository } from 'typeorm';
-import { InjectDisk, StorageDisk } from '@nestjs/storage';
+import { InjectDisk, serveFile, StorageDisk } from '@nestjs/storage';
+import type { Request, Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { paginate } from '../common/helpers/paginate.js';
 import { Permission, SignerEnum } from './entities/permission.entity.js';
@@ -112,6 +113,25 @@ export class PermissionsService {
   async findOne(id: string) {
     const permission = await this.findOneEntity(id);
     return PermissionResource.permissionResource(permission);
+  }
+
+  async serveSignature(id: string, signer: SignerEnum, req: Request, res: Response) {
+    const permission = await this.findOneEntity(id);
+    const key = this.signatureKeyOf(permission, signer);
+    if (!key) throw new NotFoundException(`El permiso con ID ${id} no tiene firma de ${signer}`);
+
+    return serveFile(this.disk, key, { req, res, disposition: 'inline' });
+  }
+
+  private signatureKeyOf(permission: Permission, signer: SignerEnum): string | null {
+    const keys: Record<SignerEnum, string | null> = {
+      [SignerEnum.employee]: permission.employee_signature_key,
+      [SignerEnum.substitute]: permission.substitute_signature_key,
+      [SignerEnum.supervisor]: permission.supervisor_signature_key,
+      [SignerEnum.floor_auditor]: permission.floor_auditor_signature_key,
+      [SignerEnum.hr]: permission.hr_signature_key,
+    };
+    return keys[signer];
   }
 
   private async findOneEntity(id: string) {

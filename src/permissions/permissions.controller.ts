@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseEnumPipe, ParseUUIDPipe, Post, Query, Req, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator.js';
 import { CreatePermissionDto } from './dto/create-permission.dto.js';
@@ -7,6 +8,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { type PermissionSignatureFiles } from './interfaces/index.js';
 import { PermissionQueryDto } from './dto/permission-query.dto.js';
 import { PermissionsService } from './permissions.service.js';
+import { SignerEnum } from './entities/permission.entity.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
 import { signatureFilter } from '../common/helpers/signature-filter.js';
@@ -44,5 +46,16 @@ export class PermissionsController {
   @Auth()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.permissionsService.findOne(id);
+  }
+
+  @Get(':id/signatures/:signer')
+  @Auth()
+  serveSignature(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('signer', new ParseEnumPipe(SignerEnum)) signer: SignerEnum,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.permissionsService.serveSignature(id, signer, req, res);
   }
 }
