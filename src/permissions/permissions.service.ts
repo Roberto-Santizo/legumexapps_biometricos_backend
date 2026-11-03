@@ -12,6 +12,7 @@ import { Permission, SignerEnum } from './entities/permission.entity.js';
 import { PermissionQueryDto } from './dto/permission-query.dto.js';
 import { PermissionResource } from './resources/permission.resource.js';
 import { PermissionSignatureFiles } from './interfaces/index.js';
+import { UpdatePermissionDto } from './dto/update-permission.dto.js';
 import { User } from '../auth/entities/user.entity.js';
 import { v4 as uuid } from 'uuid';
 
@@ -115,12 +116,56 @@ export class PermissionsService {
     return PermissionResource.permissionResource(permission);
   }
 
+  async update(id: string, updatePermissionDto: UpdatePermissionDto, user: User) {
+    const permission = await this.findOneEntity(id);
+    this.assertNotHrSigned(permission);
+
+    const { date, type, reason, salary_status, shift_start, shift_end } = updatePermissionDto;
+
+    if (shift_start || shift_end) {
+      this.validateShift(shift_start ?? permission.shift_start, shift_end ?? permission.shift_end);
+    }
+
+    // Regla 9: al cambiar la fecha se revalidan las reglas 6–8
+    if (date && date !== permission.date) {
+      await this.validateDateConflicts(date, permission.employee_pin, permission.substitute_pin, id);
+    }
+
+    // Solo los campos enviados: undefined no debe sobrescribir columnas
+    const changes = Object.fromEntries(
+      Object.entries({ date, type, reason, salary_status, shift_start, shift_end }).filter(([, value]) => value !== undefined),
+    ) as Partial<Permission>;
+
+    try {
+      await this.permissionRepository.update({ id }, { ...changes, updated_by: user });
+    } catch (error) {
+      this.databaseHelpers.handleExeptions(error);
+    }
+
+    return this.findOne(id);
+  }
+
+  // Regla 17: hard delete; un fallo al borrar las firmas no revierte la eliminación
+  async remove(id: string) {
+    const permission = await this.findOneEntity(id);
+    this.assertNotHrSigned(permission);
+
+    const keys = Object.values(SignerEnum)
+      .map(signer => this.signatureKeyOf(permission, signer))
+      .filter((key): key is string => key !== null);
+
+    await this.permissionRepository.delete({ id });
+    await this.deleteSignatures(keys);
+
+    return `Permiso con folio ${permission.folio} eliminado correctamente`;
+  }
+
   // Regla 14: Vo.Bo. de RRHH, una sola vez
   async signByHr(id: string, file: Express.Multer.File | undefined, user: User) {
     if (!file) throw new BadRequestException('La firma de RRHH (signature) es obligatoria');
 
     const permission = await this.findOneEntity(id);
-    if (permission.hr_signed_at) throw new BadRequestException(`El permiso con ID ${id} ya tiene la firma de RRHH`);
+    this.assertNotHrSigned(permission);
 
     const key = this.signatureKey(id, SignerEnum.hr);
     try {
@@ -163,6 +208,13 @@ export class PermissionsService {
     const permission = await this.permissionRepository.findOneBy({ id });
     if (!permission) throw new NotFoundException(`El permiso con ID ${id} no existe`);
     return permission;
+  }
+
+  // Reglas 14 y 15: un permiso firmado por RRHH es inmutable
+  private assertNotHrSigned(permission: Permission) {
+    if (permission.hr_signed_at) {
+      throw new BadRequestException(`El permiso con ID ${permission.id} ya tiene la firma de RRHH`);
+    }
   }
 
   private signatureKey(id: string, signer: SignerEnum) {
