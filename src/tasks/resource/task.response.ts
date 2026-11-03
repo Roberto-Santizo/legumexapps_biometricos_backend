@@ -31,7 +31,7 @@ export class TaskResponse implements TaskResourceInterface {
     pin: string;
 
     @ApiProperty({
-        description: 'Datos a enviar a ZKBioAccess. Según el tipo: alta { pin, name, lastName, deptCode, accLevelIds }, movimiento { pin, position, deptCode, accLevelIds } o baja { pin, leaveType, leaveDate }',
+        description: 'Datos a enviar a ZKBioAccess. Según el tipo: alta { pin, name, lastName, deptCode, accLevelIds }, movimiento { pin, position, deptCode, accLevelIds } o baja { pin, leaveType, leaveDate, inactivationType }',
         type: 'object',
         additionalProperties: true,
         example: { pin: '10045', position: 'Operario', deptCode: 'PROD01', accLevelIds: '4028898594b7f9660194b7fb5d7a0430' },
@@ -58,4 +58,13 @@ export class TaskResponse implements TaskResourceInterface {
         example: 'Juan Pérez López',
     })
     created_by: string;
+
+    @ApiPropertyOptional({
+        description: 'ID de la planificación semanal (null en tareas cargadas por Excel)',
+        type: String,
+        format: 'uuid',
+        nullable: true,
+        example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10',
+    })
+    planification_id: string | null;
 }

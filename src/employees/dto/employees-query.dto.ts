@@ -10,5 +10,23 @@ export class EmployeesQueryDto extends PaginationDto {
     })
     @IsOptional()
     @IsString()
-    name?: string;
+    name: string;
+
+    @ApiPropertyOptional({
+        description: 'Filtro por PIN (código) del empleado (búsqueda parcial)',
+        type: String,
+        example: '10045',
+    })
+    @IsOptional()
+    @IsString()
+    pin: string;
+
+    @ApiPropertyOptional({
+        description: 'Filtro por ID del departamento del empleado (búsqueda parcial)',
+        type: String,
+        example: '4028898594b7f9660194b7fb25b00010',
+    })
+    @IsOptional()
+    @IsString()
+    auth_dept_id: string;
 }

@@ -20,6 +20,7 @@ export class TaskResource {
             previous: task.previous,
             pin: task.pin,
             scheduled_at: task.scheduled_at.toString(),
+            planification_id: task.planification_id ?? null,
         }
     }
 }

@@ -4,25 +4,31 @@ export interface CreationPayload {
     lastName: string;
     deptCode: string;
     accLevelIds: string;
-    position_id: string;
+    position_id?: string;
     accStartTime?: string;
     accEndTime?: string;
 }
 
 export interface MovementPayload {
     pin: string;
-    name: string;
-    lastName: string;
+    name?: string;
+    lastName?: string;
     position: string;
     position_id: string;
     deptCode: string;
     accLevelIds: string;
 }
 
+export enum InactivationField {
+    PERMANENT = 'PERMANENTE',
+    TEMP = 'TEMPORAL'
+}
+
 export interface InactivatePayload {
     pin: string;
     leaveType: number;
     leaveDate: string;
+    inactivationType: InactivationField;
 }
 
 export interface TaskResourceInterface {
@@ -34,6 +40,7 @@ export interface TaskResourceInterface {
     previous: Record<string, unknown> | null;
     scheduled_at: string;
     created_by: string;
+    planification_id: string | null;
 }
 
 export type TaskPayload = CreationPayload | MovementPayload | InactivatePayload;

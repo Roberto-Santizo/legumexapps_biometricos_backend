@@ -1,5 +1,5 @@
 import { Auth } from '../auth/decorators/auth.decorator.js';
-import { Controller, Get, Post, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Param, Delete, UseInterceptors, UploadedFile, BadRequestException, Query, ParseUUIDPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
@@ -17,12 +17,17 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiPaginatedResponse } from '../common/decorators/index.js';
+import { CreateCreationTaskDto } from './dto/create-creation-task.dto.js';
+import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
+import { CreateMovementTaskDto } from './dto/create-movement-task.dto.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
 import { TaskResponse } from './resource/task.response.js';
 import { TasksService } from './tasks.service.js';
+import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
+import { imageFilter } from '../common/helpers/image-filter.js';
 import { xlxsFileFilter } from '../common/helpers/xlxs-file-filter.js';
 
 const UNAUTHORIZED_DESCRIPTION = 'Token ausente o inválido ("Token not valid") o el usuario no está activo ("User is not active")';
@@ -80,6 +85,84 @@ export class TasksController {
     return this.tasksService.uploadFile(file, user, type);
   }
 
+  @Post('creation')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @UseInterceptors(FileInterceptor('file', { fileFilter: imageFilter }))
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Programar alta',
+    description: 'Crea una tarea de alta (`alta`, `pendiente`) dentro de una planificación. La foto es opcional: si se adjunta, se guarda o sobrescribe `<pin>.jpg`; si no existe al ejecutar la tarea, el error queda en `last_error`. '
+      + '`scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. La posición es opcional; si se envía, su disponibilidad se valida al ejecutar.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Datos del nuevo empleado y foto opcional (jpg, jpeg, png o gif)',
+    schema: {
+      type: 'object',
+      required: ['planification_id', 'pin', 'name', 'lastName', 'auth_dept_id', 'accLevelIds', 'scheduled_at'],
+      properties: {
+        planification_id: { type: 'string', format: 'uuid', example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10' },
+        pin: { type: 'string', example: '10045' },
+        name: { type: 'string', example: 'Juan Carlos' },
+        lastName: { type: 'string', example: 'Pérez López' },
+        position_id: { type: 'string', example: '4028898594b7f9660194b7fb5d7a0600' },
+        auth_dept_id: { type: 'string', example: '4028898594b7f9660194b7fb5d7a0300' },
+        accLevelIds: { type: 'string', description: 'IDs separados por coma', example: '4028898594b7f9660194b7fb5d7a0430' },
+        scheduled_at: { type: 'string', format: 'date', example: '2026-11-03' },
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiCreatedResponse({ description: 'Alta programada', type: TaskResponse })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos (validación del body o propiedades no permitidas), el PIN pertenece a un empleado activo, `scheduled_at` anterior a hoy o fuera de la semana de la planificación, sin niveles de acceso, o ya existe una tarea pendiente del mismo tipo para el PIN',
+  })
+  @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
+  @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })
+  @ApiNotFoundResponse({ description: 'No existe la planificación, el departamento, la posición o alguno de los niveles de acceso' })
+  createCreation(@Body() createCreationTaskDto: CreateCreationTaskDto, @UploadedFile() file: any, @GetUser() user: User) {
+    return this.tasksService.createCreation(createCreationTaskDto, file, user);
+  }
+
+  @Post('movement')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Programar movimiento',
+    description: 'Crea una tarea de movimiento (`movimiento`, `pendiente`) dentro de una planificación, cambiando posición, departamento y niveles de acceso del empleado indicado por `pin`. '
+      + '`scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. Al ejecutar se valida que el empleado exista (si no, la tarea queda `fallida` con `last_error`), '
+      + 'se guardan sus datos actuales en `previous` y se valida la disponibilidad de la posición.',
+  })
+  @ApiCreatedResponse({ description: 'Movimiento programado', type: TaskResponse })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos (validación del body o propiedades no permitidas), `scheduled_at` anterior a hoy o fuera de la semana de la planificación, sin niveles de acceso, o ya existe una tarea pendiente del mismo tipo para el empleado',
+  })
+  @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
+  @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })
+  @ApiNotFoundResponse({ description: 'No existe la planificación, el departamento, la posición o alguno de los niveles de acceso' })
+  createMovement(@Body() createMovementTaskDto: CreateMovementTaskDto, @GetUser() user: User) {
+    return this.tasksService.createMovement(createMovementTaskDto, user);
+  }
+
+  @Post('inactivate')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Programar baja',
+    description: 'Crea una tarea de baja (`baja`, `pendiente`) dentro de una planificación con payload `{ pin, leaveType: 1, leaveDate: scheduled_at, inactivationType: type }` (`type`: PERMANENTE o TEMPORAL). `scheduled_at` debe ser hoy o posterior y estar dentro de la semana de la planificación. '
+      + 'La existencia del empleado se valida al ejecutar (si no existe, la tarea queda `fallida` con `last_error`).',
+  })
+  @ApiCreatedResponse({ description: 'Baja programada', type: TaskResponse })
+  @ApiBadRequestResponse({
+    description: 'Datos inválidos (validación del body o propiedades no permitidas), `scheduled_at` anterior a hoy o fuera de la semana de la planificación, o ya existe una tarea pendiente del mismo tipo para el empleado',
+  })
+  @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
+  @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })
+  @ApiNotFoundResponse({ description: 'No existe la planificación' })
+  createInactivation(@Body() createInactivationTaskDto: CreateInactivationTaskDto, @GetUser() user: User) {
+    return this.tasksService.createInactivation(createInactivationTaskDto, user);
+  }
+
   @Get()
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiBearerAuth()
@@ -116,6 +199,33 @@ export class TasksController {
   @ApiNotFoundResponse({ description: 'La tarea con ID <id> no existe' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.tasksService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Editar tarea',
+    description: 'Edita una tarea en estado `pendiente`, incluido cambiarla de planificación. El payload se recalcula con los valores finales (enviados o actuales). '
+      + 'Campos permitidos según tipo: alta (position_id, auth_dept_id, accLevelIds, name, lastName), movimiento (position_id, auth_dept_id, accLevelIds), baja (ninguno de payload). '
+      + 'El `scheduled_at` final debe ser hoy o posterior y, si la tarea queda con planificación, estar dentro de su semana. Las tareas de Excel sin planificación no validan semana.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    format: 'uuid',
+    description: 'ID de la tarea (UUID)',
+    example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10',
+  })
+  @ApiOkResponse({ description: 'Tarea actualizada', type: TaskResponse })
+  @ApiBadRequestResponse({
+    description: 'ID no es UUID, datos inválidos, la tarea no está pendiente, campos que no aplican al tipo ("Los campos <campos> no aplican a una tarea de tipo <tipo>"), `scheduled_at` anterior a hoy o fuera de la semana de la planificación, o sin posición/niveles de acceso',
+  })
+  @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
+  @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })
+  @ApiNotFoundResponse({ description: 'No existe la tarea, la planificación, el empleado, el departamento, la posición o alguno de los niveles de acceso' })
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateTaskDto: UpdateTaskDto) {
+    return this.tasksService.update(id, updateTaskDto);
   }
 
 

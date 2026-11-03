@@ -10,11 +10,18 @@ import { Filters } from '../common/providers/filters.js';
 import { IdGeneratorService } from '../common/services/id-generator.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { paginate } from '../common/helpers/paginate.js';
+import { Planification } from '../planifications/entities/planification.entity.js';
+import { PlanificationsService } from '../planifications/planifications.service.js';
+import { PhotosService } from '../photos/photos.service.js';
 import { PositionService } from '../position/position.service.js';
-import { Task, TaskTypeEnum } from './entities/task.entity.js';
-import { TaskPayload } from './interfaces/index.js';
+import { Task, TaskStatusEnum, TaskTypeEnum } from './entities/task.entity.js';
+import { CreationPayload, InactivatePayload, MovementPayload, TaskPayload } from './interfaces/index.js';
 import { TaskQueryDto } from './dto/task-query.dto.js';
+import { CreateCreationTaskDto } from './dto/create-creation-task.dto.js';
+import { CreateInactivationTaskDto } from './dto/create-inactivation-task.dto.js';
+import { CreateMovementTaskDto } from './dto/create-movement-task.dto.js';
 import { TaskResource } from './resource/task.resource.js';
+import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { User } from '../auth/entities/user.entity.js';
 import ExcelJS from 'exceljs';
 
@@ -42,6 +49,8 @@ export class TasksService {
     private readonly datasource: DataSource,
     private readonly filters: Filters,
     private readonly dateHandler: DateHandlerService,
+    private readonly planificationsService: PlanificationsService,
+    private readonly photosService: PhotosService,
 
   ) {
     this.resource = new TaskResource(this.dateHandler);
@@ -67,11 +76,99 @@ export class TasksService {
     return this.resource.taskEntityToJson(task);
   }
 
+  async update(id: string, updateTaskDto: UpdateTaskDto) {
+    try {
+      const task = await this.taskRepository.findOne({ where: { id }, relations: { planification: true } });
+      if (!task) throw new NotFoundException(`La tarea con ID ${id} no existe`);
+      if (task.status !== TaskStatusEnum.pending) throw new BadRequestException(`Solo se pueden editar tareas en estado ${TaskStatusEnum.pending}`);
+
+      this.validateUpdateFields(task.type, updateTaskDto);
+
+      const scheduledAt = updateTaskDto.scheduled_at ?? task.scheduled_at.toString();
+      const planification = updateTaskDto.planification_id
+        ? await this.planificationsService.findOneRaw(updateTaskDto.planification_id)
+        : task.planification;
+
+      this.validateScheduledAtNotPast(scheduledAt);
+      if (planification) this.validateScheduledAtInWeek(scheduledAt, planification);
+
+      const payload = await this.recalculatePayload(task, updateTaskDto, scheduledAt);
+
+      await this.taskRepository.save({ id: task.id, scheduled_at: scheduledAt, planification, payload });
+
+      return this.findOne(task.id);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.databaseHelpers.handleExeptions(error);
+    }
+  }
+
   async remove(id: string) {
     const task = await this.findOne(id);
     await this.taskRepository.delete({ id: task.id });
 
     return `Tarea ${id} eliminada correctamente`;
+  }
+
+  async createInactivation(createInactivationTaskDto: CreateInactivationTaskDto, user: User) {
+    const { planification_id, pin, scheduled_at, type } = createInactivationTaskDto;
+
+    try {
+      const planification = await this.validateSchedule(planification_id, scheduled_at);
+
+      const payload = createNewTaskInactivationPayload(pin, scheduled_at, type);
+      const task = await this.saveScheduledTask(TaskTypeEnum.inactivate, payload, scheduled_at, planification, user);
+
+      return this.findOne(task.id);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.databaseHelpers.handleExeptions(error);
+    }
+  }
+
+  async createCreation(createCreationTaskDto: CreateCreationTaskDto, file: any, user: User) {
+    const { planification_id, pin, name, lastName, position_id, auth_dept_id, accLevelIds, scheduled_at } = createCreationTaskDto;
+
+    try {
+      const planification = await this.validateSchedule(planification_id, scheduled_at);
+
+      const isActive = await this.employeeService.existsByPin(pin);
+      if (isActive) throw new BadRequestException(`El código ${pin} ya pertenece a un empleado activo, utilice un movimiento`);
+
+      const department = await this.validateAssignment(auth_dept_id, accLevelIds);
+      // La posición es opcional en altas
+      const position = position_id ? await this.positionService.findOneRaw(position_id) : null;
+
+      // La foto es opcional; si no existe al ejecutar, el error queda en last_error
+      if (file) await this.photosService.upsert(pin, file, user);
+
+      const payload = createNewTaskPayload(name, lastName, pin, department.code, accLevelIds, position?.id);
+      const task = await this.saveScheduledTask(TaskTypeEnum.creation, payload, scheduled_at, planification, user);
+
+      return this.findOne(task.id);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.databaseHelpers.handleExeptions(error);
+    }
+  }
+
+  async createMovement(createMovementTaskDto: CreateMovementTaskDto, user: User) {
+    const { planification_id, pin, position_id, auth_dept_id, accLevelIds, scheduled_at } = createMovementTaskDto;
+
+    try {
+      const planification = await this.validateSchedule(planification_id, scheduled_at);
+      const department = await this.validateAssignment(auth_dept_id, accLevelIds);
+      const position = await this.validatePosition(position_id);
+
+      // El empleado se busca por PIN al ejecutar la tarea (nombre y `previous` se toman ahí)
+      const payload = createNewTaskMovementPayload(position.code, pin, department.code, accLevelIds, position.id);
+      const task = await this.saveScheduledTask(TaskTypeEnum.movement, payload, scheduled_at, planification, user);
+
+      return this.findOne(task.id);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      this.databaseHelpers.handleExeptions(error);
+    }
   }
 
   async uploadFile(file: any, user: User, type: string) {
@@ -145,9 +242,9 @@ export class TasksService {
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const { deptCode, accLevelName, position, name, code, scheduledAt } = getCreationTaskRowValues(worksheet.getRow(rowNumber));
       const { department, accLevel } = await this.validateCreationFields(deptCode, accLevelName);
-      // La disponibilidad de la posición se valida al ejecutar la tarea
-      const positionEntity = await this.positionService.findOneRawByCode(String(position));
-      const payload = createNewTaskPayload(name, position, code, department.code, accLevel.id, positionEntity.id)
+      // La posición es opcional; su disponibilidad se valida al ejecutar la tarea
+      const positionEntity = position ? await this.positionService.findOneRawByCode(String(position)) : null;
+      const payload = createNewTaskPayload(name, position ? String(position) : '', code, department.code, accLevel.id, positionEntity?.id)
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.creation, user, queryRunner);
     }
 
@@ -162,7 +259,7 @@ export class TasksService {
       const { department, accLevel, employee } = await this.validateMovementFields(deptCode, accLevelName, code);
       // La disponibilidad de la posición se valida al ejecutar la tarea
       const positionEntity = await this.positionService.findOneRawByCode(String(position));
-      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, employee.name, employee.last_name, positionEntity.id);
+      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, positionEntity.id, employee.name, employee.last_name);
       const previous = formatEmployeeEntity(employee);
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.movement, user, queryRunner, previous);
     }
@@ -174,9 +271,9 @@ export class TasksService {
     const batch = this.idGenerator.generate32CaracterId();
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const { code, scheduledAt } = getInactivationTaskRowValues(worksheet.getRow(rowNumber));
+      const { code, scheduledAt, type } = getInactivationTaskRowValues(worksheet.getRow(rowNumber));
       await this.validateInactivationFields(code);
-      const payload = createNewTaskInactivationPayload(code, scheduledAt)
+      const payload = createNewTaskInactivationPayload(code, scheduledAt, type)
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.inactivate, user, queryRunner);
     }
 
@@ -219,5 +316,122 @@ export class TasksService {
     if (!employee) throw new NotFoundException(`El empleado con código ${code} no existe`);
 
     return { employee };
+  }
+
+  // Valida por ID que existan el departamento y cada nivel de acceso (separados por coma)
+  private async validateAssignment(authDeptId: string, accLevelIds: string) {
+    const department = await this.authDepartmentService.findOne(authDeptId);
+    await this.validateAccLevels(accLevelIds);
+
+    return department;
+  }
+
+  // Posición obligatoria (movimientos); su disponibilidad se valida al ejecutar la tarea
+  private async validatePosition(positionId?: string) {
+    if (!positionId) throw new BadRequestException('La tarea no tiene una posición asignada, indique position_id');
+    return this.positionService.findOneRaw(positionId);
+  }
+
+  private async validateAccLevels(accLevelIds: string) {
+    const levelIds = (accLevelIds ?? '').split(',').map(id => id.trim()).filter(id => id.length > 0);
+    if (levelIds.length === 0) throw new BadRequestException('Debe indicar al menos un nivel de acceso');
+
+    for (const levelId of levelIds) {
+      await this.accLevelService.findOne(levelId);
+    }
+  }
+
+  private async findDepartmentByCode(deptCode: string) {
+    const departments = await this.authDepartmentService.getAll();
+    const department = departments.find(dept => dept.code === deptCode);
+    if (!department) throw new NotFoundException(`El departamento ${deptCode} no existe`);
+    return department;
+  }
+
+  // Rechaza campos de payload que no aplican al tipo de la tarea
+  private validateUpdateFields(type: TaskTypeEnum, updateTaskDto: UpdateTaskDto) {
+    const allowedByType: Record<TaskTypeEnum, (keyof UpdateTaskDto)[]> = {
+      [TaskTypeEnum.creation]: ['position_id', 'auth_dept_id', 'accLevelIds', 'name', 'lastName'],
+      [TaskTypeEnum.movement]: ['position_id', 'auth_dept_id', 'accLevelIds'],
+      [TaskTypeEnum.inactivate]: ['type'],
+    };
+    const payloadFields: (keyof UpdateTaskDto)[] = ['position_id', 'auth_dept_id', 'accLevelIds', 'name', 'lastName', 'type'];
+
+    const invalid = payloadFields.filter(field => updateTaskDto[field] !== undefined && !allowedByType[type].includes(field));
+    if (invalid.length > 0) throw new BadRequestException(`Los campos ${invalid.join(', ')} no aplican a una tarea de tipo ${type}`);
+  }
+
+  private async recalculatePayload(task: Task, updateTaskDto: UpdateTaskDto, scheduledAt: string): Promise<TaskPayload> {
+    if (task.type === TaskTypeEnum.inactivate) {
+      const type = updateTaskDto.type ?? (task.payload as InactivatePayload).inactivationType;
+      return createNewTaskInactivationPayload(task.pin, scheduledAt, type);
+    }
+
+    const current = task.payload as CreationPayload | MovementPayload;
+    const department = updateTaskDto.auth_dept_id
+      ? await this.authDepartmentService.findOne(updateTaskDto.auth_dept_id)
+      : await this.findDepartmentByCode(current.deptCode);
+    const accLevelIds = updateTaskDto.accLevelIds ?? current.accLevelIds;
+    await this.validateAccLevels(accLevelIds);
+    const positionId = updateTaskDto.position_id ?? current.position_id;
+
+    if (task.type === TaskTypeEnum.movement) {
+      const position = await this.validatePosition(positionId);
+      const { name, lastName } = current as MovementPayload;
+      return createNewTaskMovementPayload(position.code, task.pin, department.code, accLevelIds, position.id, name, lastName);
+    }
+
+    const name = updateTaskDto.name ?? (current as CreationPayload).name;
+    const lastName = updateTaskDto.lastName ?? (current as CreationPayload).lastName;
+    // La posición es opcional en altas
+    const position = positionId ? await this.positionService.findOneRaw(positionId) : null;
+    return createNewTaskPayload(name, lastName, task.pin, department.code, accLevelIds, position?.id);
+  }
+
+  // Guarda una tarea individual (sin lote ni archivo de origen) dentro de una planificación
+  private async saveScheduledTask(
+    type: TaskTypeEnum,
+    payload: TaskPayload,
+    scheduledAt: string,
+    planification: Planification,
+    user: User,
+    previous?: Record<string, unknown>
+  ) {
+    const newTask = this.taskRepository.create({
+      type,
+      pin: payload.pin,
+      payload,
+      scheduled_at: scheduledAt,
+      planification,
+      created_by: user,
+      previous: previous ?? null,
+    });
+
+    return this.taskRepository.save(newTask);
+  }
+
+  // Valida planificación y fecha programada de una tarea individual; devuelve la planificación
+  private async validateSchedule(planificationId: string, scheduledAt: string) {
+    const planification = await this.planificationsService.findOneRaw(planificationId);
+
+    this.validateScheduledAtNotPast(scheduledAt);
+    this.validateScheduledAtInWeek(scheduledAt, planification);
+
+    return planification;
+  }
+
+  // Las fechas se comparan como 'YYYY-MM-DD'
+  private validateScheduledAtNotPast(scheduledAt: string) {
+    const today = this.dateHandler.getCurrentDate('yyyy-MM-dd');
+    if (scheduledAt < today) throw new BadRequestException(`La fecha programada ${scheduledAt} no puede ser anterior a hoy (${today})`);
+  }
+
+  private validateScheduledAtInWeek(scheduledAt: string, planification: Planification) {
+    const startDate = planification.start_date.toString();
+    const endDate = planification.end_date.toString();
+
+    if (scheduledAt < startDate || scheduledAt > endDate) {
+      throw new BadRequestException(`La fecha programada ${scheduledAt} no está dentro de la semana ${planification.week} del ${planification.year} (${startDate} a ${endDate})`);
+    }
   }
 }

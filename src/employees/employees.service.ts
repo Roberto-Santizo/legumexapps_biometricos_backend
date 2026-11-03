@@ -50,12 +50,16 @@ export class EmployeesService {
       const exists = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
       if (exists) throw new BadRequestException(`El empleado con código ${createEmployeeDto.pin} ya existe`);
 
-      const position = await this.positionService.validatePosition(createEmployeeDto.position_id);
+      const position = createEmployeeDto.position_id
+        ? await this.positionService.validatePosition(createEmployeeDto.position_id)
+        : null;
 
       await this.saveInZkBioaccess(createEmployeeDto, file, user);
 
-      const employee = await this.findOneByPin(createEmployeeDto.pin);
-      await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+      if (position) {
+        const employee = await this.findOneByPin(createEmployeeDto.pin);
+        await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+      }
 
       return 'Empleado Creado Correctamente';
     } catch (error) {
@@ -70,11 +74,13 @@ export class EmployeesService {
       const employee = await this.employeeRepository.findOneBy({ id });
       if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
 
-      const position = await this.positionService.validatePosition(updateEmployeeDto.position_id, employee.id);
+      const position = updateEmployeeDto.position_id
+        ? await this.positionService.validatePosition(updateEmployeeDto.position_id, employee.id)
+        : null;
 
       await this.saveInZkBioaccess({ ...updateEmployeeDto, pin: employee.pin }, file, user);
 
-      await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+      if (position) await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
 
       return 'Empleado Actualizado Correctamente';
     } catch (error) {
@@ -86,19 +92,23 @@ export class EmployeesService {
 
   async createOrUpdateWithPosition(createEmployeeDto: CreateEmployeeDto, image?: string) {
     const current = await this.employeeRepository.findOneBy({ pin: createEmployeeDto.pin });
-    const position = await this.positionService.validatePosition(createEmployeeDto.position_id, current?.id);
+    const position = createEmployeeDto.position_id
+      ? await this.positionService.validatePosition(createEmployeeDto.position_id, current?.id)
+      : null;
 
     const flag = await this.zkBioaccessService.createOrUpdateEmployee(createEmployeeDto, image);
 
-    const employee = current ?? await this.findOneByPin(createEmployeeDto.pin);
-    await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+    if (position) {
+      const employee = current ?? await this.findOneByPin(createEmployeeDto.pin);
+      await this.employeeRepository.update({ id: employee.id }, { position_id: position.id });
+    }
 
     return flag;
   }
 
   async findAll(employeesQueryDto: EmployeesQueryDto) {
     const { limit = 10, offset = 0 } = employeesQueryDto;
-    const where = this.filters.buildWhere<Employee, EmployeesQueryDto>(employeesQueryDto, { like: ['name'] });
+    const where = this.filters.buildWhere<Employee, EmployeesQueryDto>(employeesQueryDto, { like: ['name', 'auth_dept_id', 'pin'] });
 
     const [employees, total] = await this.employeeRepository.findAndCount({
       take: limit,
@@ -115,12 +125,22 @@ export class EmployeesService {
     return employees;
   }
 
-  async findOne(id: string) {
-    const employee = await this.employeeRepository.findOne({ where: { id }, relations: { position: true } });
+  async findOne(pin: string) {
+    const employee = await this.employeeRepository.findOne({ where: { pin }, relations: { position: true } });
 
-    if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
+    if (!employee) throw new NotFoundException(`El usuario con CÓDIGO ${pin} no existe`);
 
     return EmployeeResource.employeeList(employee);
+  }
+
+  async findOneRaw(id: string) {
+    const employee = await this.employeeRepository.findOneBy({ id });
+    if (!employee) throw new NotFoundException(`El usuario con ID ${id} no existe`);
+    return employee;
+  }
+
+  async existsByPin(pin: string) {
+    return this.employeeRepository.existsBy({ pin });
   }
 
   async findOneByPin(pin: string) {
@@ -155,7 +175,7 @@ export class EmployeesService {
 
   async inactiveEmployeeById(id: string, user: User) {
     try {
-      const employee = await this.findOne(id);
+      const employee = await this.findOneRaw(id);
       await this.zkBioaccessService.inactivateEmployee({ pin: employee.pin, leaveType: 1, leaveDate: this.dateHandler.getCurrentDate() });
 
       this.emailService.sendMail('Baja de Empleado', inactivateEmployeeEmail({
@@ -164,7 +184,7 @@ export class EmployeesService {
         name: employee.name,
         leave_date: this.dateHandler.getCurrentDate(),
         created_at: this.dateHandler.getCurrentDate(),
-        department: employee.department,
+        department: employee.authDepartment.name,
         updater_name: user.name,
         updater_username: user.email
       }))

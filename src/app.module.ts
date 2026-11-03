@@ -23,6 +23,7 @@ import { PositionFincaModule } from './position-finca/position-finca.module.js';
 import { AreaFincaModule } from './area-finca/area-finca.module.js';
 import { PositionModule } from './position/position.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
+import { PlanificationsModule } from './planifications/planifications.module.js';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
     AreaFincaModule,
     PositionModule,
     DashboardModule,
+    PlanificationsModule,
   ],
 })
 export class AppModule { }

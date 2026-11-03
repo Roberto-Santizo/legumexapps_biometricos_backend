@@ -45,12 +45,13 @@ export class CreateEmployeeDto {
     @IsString()
     accLevelIds: string;
 
-    @ApiProperty({
+    @ApiPropertyOptional({
         description: 'ID de la posición a asignar; no debe tener otro empleado asignado',
         example: '4028898594b7f9660194b7fb5d7a0600',
     })
+    @IsOptional()
     @IsString()
-    position_id: string;
+    position_id?: string;
 
     @ApiPropertyOptional({
         description: 'Fecha y hora de inicio de vigencia del acceso',
