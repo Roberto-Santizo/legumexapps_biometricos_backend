@@ -20,6 +20,13 @@ export interface PermissionSignaturesInterface {
     hr: boolean;
 }
 
+export interface PermissionSignatureFiles {
+    employee_signature?: Express.Multer.File[];
+    substitute_signature?: Express.Multer.File[];
+    supervisor_signature?: Express.Multer.File[];
+    floor_auditor_signature?: Express.Multer.File[];
+}
+
 export interface PermissionResourceInterface {
     id: string;
     folio: number;
