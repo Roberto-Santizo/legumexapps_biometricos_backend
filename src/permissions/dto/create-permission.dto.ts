@@ -42,3 +42,18 @@ export class CreatePermissionDto {
     @IsNotEmpty()
     substitute_pin?: string;
 }
+
+// Solo documenta el cuerpo multipart; los archivos llegan por FileFieldsInterceptor
+export class CreatePermissionMultipartDto extends CreatePermissionDto {
+    @ApiProperty({ description: 'Firma del trabajador (PNG, máx. 1 MB)', type: 'string', format: 'binary' })
+    employee_signature: any;
+
+    @ApiPropertyOptional({ description: 'Firma del comodín (PNG, máx. 1 MB); obligatoria solo con substitute_pin', type: 'string', format: 'binary' })
+    substitute_signature?: any;
+
+    @ApiProperty({ description: 'Firma del jefe o supervisor de línea (PNG, máx. 1 MB)', type: 'string', format: 'binary' })
+    supervisor_signature: any;
+
+    @ApiProperty({ description: 'Firma del auditor de piso (PNG, máx. 1 MB)', type: 'string', format: 'binary' })
+    floor_auditor_signature: any;
+}
