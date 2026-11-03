@@ -149,6 +149,12 @@ export class EmployeesService {
     return employee;
   }
 
+  async findOneByPinWithRelations(pin: string) {
+    const employee = await this.employeeRepository.findOne({ where: { pin }, relations: { authDepartment: true, position: true } });
+    if (!employee) throw new NotFoundException(`El usuario con código ${pin} no existe`);
+    return employee;
+  }
+
   async remove(pin: string, user: User) {
     const employee = await this.findOneByPin(pin);
     await this.inactiveEmployeeById(employee.id, user);
