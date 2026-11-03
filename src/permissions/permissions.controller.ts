@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Param, ParseEnumPipe, ParseUUIDPipe, Post, Query, Req, Res, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseEnumPipe, ParseUUIDPipe, Post, Query, Req, Res, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator.js';
 import { CreatePermissionDto } from './dto/create-permission.dto.js';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { type PermissionSignatureFiles } from './interfaces/index.js';
 import { PermissionQueryDto } from './dto/permission-query.dto.js';
@@ -34,6 +34,17 @@ export class PermissionsController {
     @GetUser() user: User,
   ) {
     return this.permissionsService.create(createPermissionDto, files ?? {}, user);
+  }
+
+  @Post(':id/hr-signature')
+  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @UseInterceptors(FileInterceptor('signature', { fileFilter: signatureFilter, limits: SIGNATURE_LIMITS }))
+  signByHr(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @GetUser() user: User,
+  ) {
+    return this.permissionsService.signByHr(id, file, user);
   }
 
   @Get()

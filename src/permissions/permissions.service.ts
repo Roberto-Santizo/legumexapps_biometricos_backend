@@ -115,6 +115,31 @@ export class PermissionsService {
     return PermissionResource.permissionResource(permission);
   }
 
+  // Regla 14: Vo.Bo. de RRHH, una sola vez
+  async signByHr(id: string, file: Express.Multer.File | undefined, user: User) {
+    if (!file) throw new BadRequestException('La firma de RRHH (signature) es obligatoria');
+
+    const permission = await this.findOneEntity(id);
+    if (permission.hr_signed_at) throw new BadRequestException(`El permiso con ID ${id} ya tiene la firma de RRHH`);
+
+    const key = this.signatureKey(id, SignerEnum.hr);
+    try {
+      await this.disk.put(key, file.buffer, { contentType: 'image/png' });
+    } catch (error) {
+      this.logger.error(error);
+      throw new InternalServerErrorException('Hubo un error al guardar la firma de RRHH');
+    }
+
+    try {
+      await this.permissionRepository.update({ id }, { hr_signature_key: key, hr_signed_by: user, hr_signed_at: new Date() });
+    } catch (error) {
+      await this.deleteSignatures([key]);
+      this.databaseHelpers.handleExeptions(error);
+    }
+
+    return this.findOne(id);
+  }
+
   async serveSignature(id: string, signer: SignerEnum, req: Request, res: Response) {
     const permission = await this.findOneEntity(id);
     const key = this.signatureKeyOf(permission, signer);
