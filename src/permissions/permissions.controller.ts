@@ -1,10 +1,11 @@
-import { Body, Controller, Post, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator.js';
 import { CreatePermissionDto } from './dto/create-permission.dto.js';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { type PermissionSignatureFiles } from './interfaces/index.js';
+import { PermissionQueryDto } from './dto/permission-query.dto.js';
 import { PermissionsService } from './permissions.service.js';
 import { User } from '../auth/entities/user.entity.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
@@ -31,5 +32,17 @@ export class PermissionsController {
     @GetUser() user: User,
   ) {
     return this.permissionsService.create(createPermissionDto, files ?? {}, user);
+  }
+
+  @Get()
+  @Auth()
+  findAll(@Query() permissionQueryDto: PermissionQueryDto) {
+    return this.permissionsService.findAll(permissionQueryDto);
+  }
+
+  @Get(':id')
+  @Auth()
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.permissionsService.findOne(id);
   }
 }

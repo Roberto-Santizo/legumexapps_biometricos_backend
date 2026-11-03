@@ -2,10 +2,13 @@ import { BadRequestException, Injectable, InternalServerErrorException, Logger, 
 import { CreatePermissionDto } from './dto/create-permission.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { EmployeesService } from '../employees/employees.service.js';
-import { FindOptionsWhere, Not, Repository } from 'typeorm';
+import { Filters } from '../common/providers/filters.js';
+import { FindOptionsWhere, IsNull, Not, Repository } from 'typeorm';
 import { InjectDisk, StorageDisk } from '@nestjs/storage';
 import { InjectRepository } from '@nestjs/typeorm';
+import { paginate } from '../common/helpers/paginate.js';
 import { Permission, SignerEnum } from './entities/permission.entity.js';
+import { PermissionQueryDto } from './dto/permission-query.dto.js';
 import { PermissionResource } from './resources/permission.resource.js';
 import { PermissionSignatureFiles } from './interfaces/index.js';
 import { User } from '../auth/entities/user.entity.js';
@@ -27,6 +30,7 @@ export class PermissionsService {
 
     private readonly employeesService: EmployeesService,
     private readonly databaseHelpers: DatabaseHelpers,
+    private readonly filters: Filters,
   ) { }
 
   async create(createPermissionDto: CreatePermissionDto, files: PermissionSignatureFiles, user: User) {
@@ -81,6 +85,31 @@ export class PermissionsService {
       throw new InternalServerErrorException('Hubo un error al guardar las firmas del permiso');
     }
 
+    const permission = await this.findOneEntity(id);
+    return PermissionResource.permissionResource(permission);
+  }
+
+  async findAll(permissionQueryDto: PermissionQueryDto) {
+    const { limit = 10, offset = 0, hr_signed, ...filters } = permissionQueryDto;
+    const where = this.filters.buildWhere<Permission, typeof filters>(filters, {
+      like: ['employee_pin', 'employee_name', 'substitute_pin'],
+      date: ['date'],
+    });
+
+    // hr_signed no es columna: se traduce a hr_signed_at
+    if (hr_signed !== undefined) where.hr_signed_at = hr_signed === 'true' ? Not(IsNull()) : IsNull();
+
+    const [permissions, total] = await this.permissionRepository.findAndCount({
+      take: limit,
+      skip: offset,
+      where,
+      order: { date: 'DESC', folio: 'DESC' },
+    });
+
+    return paginate(PermissionResource.collection(permissions), total, limit, offset);
+  }
+
+  async findOne(id: string) {
     const permission = await this.findOneEntity(id);
     return PermissionResource.permissionResource(permission);
   }
