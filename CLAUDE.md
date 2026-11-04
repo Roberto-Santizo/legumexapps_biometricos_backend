@@ -6,7 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NestJS 12 + TypeORM (Postgres + 2x MSSQL) + Passport JWT + `@nestjs/swagger` + `@nestjs/storage` + `@nestjs/schedule`. Package manager: **yarn**. Tests: **vitest** (not Jest). Lint: **oxlint** (type-aware; `no-floating-promises` is an error, `no-explicit-any` off). Prettier: single quotes, trailing commas.
 
-Code comments, API messages, and Swagger texts are in **Spanish**.
+API messages and Swagger texts are in **Spanish**.
+
+## Rules
+
+- **NO code comments.** Never add comments (`//`, `/* */`, JSDoc) when generating, editing, or adding code, in any file. Swagger decorators are not comments and stay required.
 
 ## Commands
 
