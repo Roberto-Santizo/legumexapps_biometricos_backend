@@ -1,6 +1,6 @@
 import { AccLevelEmployee } from '../acc-level/entities/acc_level_employee.js';
 import { AccLevelEmployeeResource } from '../acc-level/resources/acc_level_employee.resource.js';
-import { BadRequestException, HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { DateHandlerService } from '../common/services/date-handler.service.js';
@@ -25,6 +25,9 @@ import { PhotosService } from '../photos/photos.service.js';
 
 @Injectable()
 export class EmployeesService {
+
+  private readonly logger = new Logger(EmployeesService.name);
+
   constructor(
     @InjectRepository(Employee, MSSQL_CONNECTION)
     private readonly employeeRepository: Repository<Employee>,
@@ -149,6 +152,12 @@ export class EmployeesService {
     return employee;
   }
 
+  async findOneByPinWithRelations(pin: string) {
+    const employee = await this.employeeRepository.findOne({ where: { pin }, relations: { authDepartment: true, position: true } });
+    if (!employee) throw new NotFoundException(`El usuario con código ${pin} no existe`);
+    return employee;
+  }
+
   async remove(pin: string, user: User) {
     const employee = await this.findOneByPin(pin);
     await this.inactiveEmployeeById(employee.id, user);
@@ -178,7 +187,8 @@ export class EmployeesService {
       const employee = await this.findOneRaw(id);
       await this.zkBioaccessService.inactivateEmployee({ pin: employee.pin, leaveType: 1, leaveDate: this.dateHandler.getCurrentDate() });
 
-      this.emailService.sendMail('Baja de Empleado', inactivateEmployeeEmail({
+      // Correo sin esperar: un fallo solo se registra y no revierte la baja
+      void this.emailService.sendMail('Baja de Empleado', inactivateEmployeeEmail({
         pin: employee.pin,
         last_name: employee.last_name,
         name: employee.name,
@@ -187,7 +197,7 @@ export class EmployeesService {
         department: employee.authDepartment.name,
         updater_name: user.name,
         updater_username: user.email
-      }))
+      })).catch(error => this.logger.error(`No se pudo enviar el correo de baja del empleado ${employee.pin}`, error));
       return 'Empleado dado de baja correctamente.'
     } catch (error) {
       this.databaseHelpers.handleExeptions(error);
