@@ -163,45 +163,48 @@ export class PermissionsController {
     summary: 'Listar permisos',
     description: 'Devuelve los permisos paginados con `limit`/`offset`, ordenados por fecha y folio descendente. '
       + 'Filtros: PIN y nombre del trabajador y PIN del comodín (búsqueda parcial), folio, fecha (`YYYY-MM-DD` o rango `desde,hasta`), tipo, estado de salario '
-      + 'y `hr_signed` (con o sin firma de RRHH). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
+      + 'y `hr_signed` (con o sin firma de RRHH). Los usuarios sin rol admin o rrhh solo ven los permisos que crearon. '
+      + 'La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
   })
   @ApiPaginatedResponse(PermissionResponse, 'Listado paginado de permisos')
   @ApiBadRequestResponse({ description: 'Parámetros de consulta inválidos o no permitidos, o fecha inválida ("Fecha inválida en \'date\': <valor>")' })
   @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
-  findAll(@Query() permissionQueryDto: PermissionQueryDto) {
-    return this.permissionsService.findAll(permissionQueryDto);
+  findAll(@Query() permissionQueryDto: PermissionQueryDto, @GetUser() user: User) {
+    return this.permissionsService.findAll(permissionQueryDto, user);
   }
 
   @Get(':id')
   @Auth()
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Obtener permiso', description: 'Devuelve el detalle de un permiso. Las firmas se indican como booleanos y se descargan por `/permissions/:id/signatures/:signer`.' })
+  @ApiOperation({ summary: 'Obtener permiso', description: 'Devuelve el detalle de un permiso. Las firmas se indican como booleanos y se descargan por `/permissions/:id/signatures/:signer`. '
+      + 'Los usuarios sin rol admin o rrhh solo pueden consultar los permisos que crearon.' })
   @ApiParam(ID_PARAM)
   @ApiOkResponse({ description: 'Permiso encontrado', type: PermissionResponse })
   @ApiBadRequestResponse({ description: 'El ID no es un UUID válido ("Validation failed (uuid is expected)")' })
   @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
-  @ApiNotFoundResponse({ description: NOT_FOUND_DESCRIPTION })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.permissionsService.findOne(id);
+  @ApiNotFoundResponse({ description: `${NOT_FOUND_DESCRIPTION} o no fue creado por el usuario (si no tiene rol admin o rrhh)` })
+  findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    return this.permissionsService.findOne(id, user);
   }
 
   @Get(':id/signatures/:signer')
   @Auth()
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Descargar firma', description: 'Devuelve la imagen PNG de una firma del permiso (inline).' })
+  @ApiOperation({ summary: 'Descargar firma', description: 'Devuelve la imagen PNG de una firma del permiso (inline). Los usuarios sin rol admin o rrhh solo acceden a permisos que crearon.' })
   @ApiParam(ID_PARAM)
   @ApiParam({ name: 'signer', enum: SignerEnum, description: 'Firmante', example: SignerEnum.supervisor })
   @ApiProduces('image/png')
   @ApiOkResponse({ description: 'Imagen PNG de la firma', schema: { type: 'string', format: 'binary' } })
   @ApiBadRequestResponse({ description: 'El ID no es un UUID válido o el firmante no es válido' })
   @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
-  @ApiNotFoundResponse({ description: 'El permiso no existe o no tiene esa firma (comodín ausente o RRHH sin firmar) ("El permiso con ID <id> no tiene firma de <signer>")' })
+  @ApiNotFoundResponse({ description: 'El permiso no existe, no fue creado por el usuario (si no tiene rol admin o rrhh) o no tiene esa firma (comodín ausente o RRHH sin firmar) ("El permiso con ID <id> no tiene firma de <signer>")' })
   serveSignature(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('signer', new ParseEnumPipe(SignerEnum)) signer: SignerEnum,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
+    @GetUser() user: User,
   ) {
-    return this.permissionsService.serveSignature(id, signer, req, res);
+    return this.permissionsService.serveSignature(id, signer, req, res, user);
   }
 }

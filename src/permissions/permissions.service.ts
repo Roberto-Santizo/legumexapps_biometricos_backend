@@ -14,6 +14,7 @@ import { PermissionResource } from './resources/permission.resource.js';
 import { PermissionSignatureFiles } from './interfaces/index.js';
 import { UpdatePermissionDto } from './dto/update-permission.dto.js';
 import { User } from '../auth/entities/user.entity.js';
+import { ValidRoles } from '../auth/interfaces/interfaces.js';
 import { v4 as uuid } from 'uuid';
 
 type PermissionSnapshots = Pick<Permission, 'employee_pin' | 'employee_name' | 'department_name' | 'position_name' | 'substitute_pin' | 'substitute_name'>;
@@ -91,7 +92,7 @@ export class PermissionsService {
     return PermissionResource.permissionResource(permission);
   }
 
-  async findAll(permissionQueryDto: PermissionQueryDto) {
+  async findAll(permissionQueryDto: PermissionQueryDto, user: User) {
     const { limit = 10, offset = 0, hr_signed, ...filters } = permissionQueryDto;
     const where = this.filters.buildWhere<Permission, typeof filters>(filters, {
       like: ['employee_pin', 'employee_name', 'substitute_pin'],
@@ -104,15 +105,15 @@ export class PermissionsService {
     const [permissions, total] = await this.permissionRepository.findAndCount({
       take: limit,
       skip: offset,
-      where,
+      where: { ...where, ...this.ownerFilter(user) },
       order: { date: 'DESC', folio: 'DESC' },
     });
 
     return paginate(PermissionResource.collection(permissions), total, limit, offset);
   }
 
-  async findOne(id: string) {
-    const permission = await this.findOneEntity(id);
+  async findOne(id: string, user?: User) {
+    const permission = await this.findOneEntity(id, user);
     return PermissionResource.permissionResource(permission);
   }
 
@@ -185,8 +186,8 @@ export class PermissionsService {
     return this.findOne(id);
   }
 
-  async serveSignature(id: string, signer: SignerEnum, req: Request, res: Response) {
-    const permission = await this.findOneEntity(id);
+  async serveSignature(id: string, signer: SignerEnum, req: Request, res: Response, user: User) {
+    const permission = await this.findOneEntity(id, user);
     const key = this.signatureKeyOf(permission, signer);
     if (!key) throw new NotFoundException(`El permiso con ID ${id} no tiene firma de ${signer}`);
 
@@ -204,10 +205,17 @@ export class PermissionsService {
     return keys[signer];
   }
 
-  private async findOneEntity(id: string) {
-    const permission = await this.permissionRepository.findOneBy({ id });
+  // Con user, un permiso ajeno a un usuario sin rol admin/rrhh se reporta como inexistente
+  private async findOneEntity(id: string, user?: User) {
+    const permission = await this.permissionRepository.findOneBy({ id, ...(user ? this.ownerFilter(user) : {}) });
     if (!permission) throw new NotFoundException(`El permiso con ID ${id} no existe`);
     return permission;
+  }
+
+  // admin y rrhh ven todos los permisos; el resto solo los que creó
+  private ownerFilter(user: User): FindOptionsWhere<Permission> {
+    const canSeeAll = user.roles.some(role => role === ValidRoles.admin || role === ValidRoles.rrhh);
+    return canSeeAll ? {} : { created_by: { id: user.id } };
   }
 
   // Reglas 14 y 15: un permiso firmado por RRHH es inmutable
