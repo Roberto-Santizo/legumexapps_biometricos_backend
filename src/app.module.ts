@@ -25,6 +25,7 @@ import { PositionModule } from './position/position.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { PlanificationsModule } from './planifications/planifications.module.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
+import { SeederModule } from './seeder/seeder.module.js';
 
 @Module({
   imports: [
@@ -37,7 +38,7 @@ import { PermissionsModule } from './permissions/permissions.module.js';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
-      port: +(process.env.DB_PORT ?? 5432),
+      port: +(process.env.DB_PORT ?? 54323),
       database: process.env.DB_NAME,
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
@@ -93,6 +94,7 @@ import { PermissionsModule } from './permissions/permissions.module.js';
     DashboardModule,
     PlanificationsModule,
     PermissionsModule,
+    SeederModule,
   ],
 })
 export class AppModule { }

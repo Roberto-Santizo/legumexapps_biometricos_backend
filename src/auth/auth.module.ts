@@ -29,6 +29,6 @@ import { CommonModule } from '../common/common.module.js';
     CommonModule
   ],
 
-  exports: [TypeOrmModule, PassportModule, JwtModule, JwtStrategy]
+  exports: [TypeOrmModule, PassportModule, JwtModule, JwtStrategy, AuthService]
 })
 export class AuthModule { }
