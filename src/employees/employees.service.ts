@@ -15,7 +15,7 @@ import { inactivateEmployeeEmail } from '../common/emails/inactivate-employee.em
 import { InjectDisk, StorageDisk } from '@nestjs/storage';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity.js';
 import { ZkBioaccessService } from './services/zkbioaccess.service.js';
 import { PositionService } from '../position/position.service.js';
@@ -121,6 +121,16 @@ export class EmployeesService {
     });
 
     return paginate(EmployeeResource.collection(employees), total, limit, offset);
+  }
+
+  async findEmployeesByLineCode(code: string) {
+    const employees = await this.employeeRepository.find({
+      // where: { position: { code: Like(`%${code}%`) } },
+      where: { last_name: Like(`%${code}%`) },
+      relations: { position: true },
+    });
+
+    return EmployeeResource.collection(employees);
   }
 
   async getAll() {

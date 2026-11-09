@@ -139,6 +139,11 @@ export class EmployeesController {
     return this.employeesService.findAll(employeesQueryDto);
   }
 
+  @Get('/getEmployeesByLineCode/:code')
+  findEmployeesByLineCode(@Param('code') pos: string){
+    return this.employeesService.findEmployeesByLineCode(pos);
+  }
+
   @Get(':code')
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   @ApiOperation({
