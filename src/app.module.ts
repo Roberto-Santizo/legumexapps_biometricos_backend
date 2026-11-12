@@ -26,6 +26,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { PlanificationsModule } from './planifications/planifications.module.js';
 import { PermissionsModule } from './permissions/permissions.module.js';
 import { SeederModule } from './seeder/seeder.module.js';
+import { DiscountsModule } from './discounts/discounts.module.js';
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { SeederModule } from './seeder/seeder.module.js';
     PlanificationsModule,
     PermissionsModule,
     SeederModule,
+    DiscountsModule,
   ],
 })
 export class AppModule { }
