@@ -128,6 +128,7 @@ export class EmployeesService {
       // where: { position: { code: Like(`%${code}%`) } },
       where: { last_name: Like(`%${code}%`) },
       relations: { position: true },
+      order: { last_name: 'ASC' }
     });
 
     return EmployeeResource.collection(employees);
