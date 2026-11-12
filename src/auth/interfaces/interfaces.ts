@@ -23,4 +23,5 @@ export enum ValidRoles {
     rrhh = 'rrhh',
     fincas = 'fincas',
     user = 'user',
+    merlot = 'merlot'
 }

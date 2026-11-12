@@ -13,7 +13,7 @@ import { ApiPaginatedResponse } from '../common/decorators/index.js';
 import { EmployeeTransactionsService } from './employee-transactions.service.js';
 import { EmployeeTransactionQueryDto } from './dto/employee-transaction-query.dto.js';
 import { EmployeeTransaction } from './entities/employee-transaction.entity.js';
-import { GenerateTransactionsReportDto } from './dto/generate-transactions-report.dto.js';
+import { GenerateTransactionsReportDto } from '../common/dto/generate-transactions-report.dto.js';
 import { Auth } from '../auth/decorators/auth.decorator.js';
 import { ValidRoles } from '../auth/interfaces/interfaces.js';
 

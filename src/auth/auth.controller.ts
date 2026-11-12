@@ -27,7 +27,7 @@ export class AuthController {
   })
   @ApiCreatedResponse({ description: 'Usuario registrado correctamente', type: AuthUserResponse })
   @ApiBadRequestResponse({
-    description: 'Datos inválidos (validación del body o propiedades no permitidas) o el correo ya está registrado',
+    description: 'Datos inválidos (validación del body o propiedades no permitidas) o el correo ya está registrado ("Key (email)=(<email>) already exists.")',
   })
   @ApiInternalServerErrorResponse({ description: 'Error inesperado de base de datos ("Please check server logs")' })
   create(@Body() registerDto: RegisterDto) {
@@ -42,7 +42,7 @@ export class AuthController {
   @ApiCreatedResponse({ description: 'Inicio de sesión exitoso', type: AuthUserResponse })
   @ApiBadRequestResponse({ description: 'Datos inválidos (validación del body o propiedades no permitidas)' })
   @ApiUnauthorizedResponse({
-    description: 'El usuario no existe o no está activo, o la contraseña es incorrecta ("Credentials are not valid")',
+    description: 'El usuario no existe o no está activo ("The user is not active, please comunicate with the administrator"), o la contraseña es incorrecta ("Credentials are not valid")',
   })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
