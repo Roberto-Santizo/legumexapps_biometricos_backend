@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsArray, IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { ValidRoles } from "../interfaces/interfaces.js";
 
 export class RegisterDto {
     @ApiProperty({
@@ -32,8 +33,9 @@ export class RegisterDto {
     password: string;
 
     @ApiPropertyOptional({
-        description: 'Roles del usuario (admin, rrhh, fincas, user). Por defecto: ["user"]',
-        type: [String],
+        description: 'Roles del usuario (admin, rrhh, fincas, user, merlot). Por defecto: ["user"]',
+        enum: ValidRoles,
+        isArray: true,
         example: ['user'],
     })
     @IsString({ each: true })
