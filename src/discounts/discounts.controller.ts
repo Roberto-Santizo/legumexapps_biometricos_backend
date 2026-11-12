@@ -3,6 +3,7 @@ import { DiscountsService } from './discounts.service.js';
 import { CreateDiscountDto } from './dto/create-discount.dto.js';
 import { UpdateDiscountDto } from './dto/update-discount.dto.js';
 import { DiscountQueryDto } from './dto/discount-query.dto.js';
+import { GenerateTransactionsReportDto } from '../common/dto/generate-transactions-report.dto.js';
 
 @Controller('discounts')
 export class DiscountsController {
@@ -31,5 +32,10 @@ export class DiscountsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.discountsService.remove(id);
+  }
+
+  @Post('report')
+  getDiscountReport(@Body() generateTransactionsDto: GenerateTransactionsReportDto) {
+    return this.discountsService.getDiscountReport(generateTransactionsDto);
   }
 }

@@ -6,8 +6,10 @@ import { Filters } from '../common/providers/filters.js';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { paginate } from '../common/helpers/paginate.js';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { UpdateDiscountDto } from './dto/update-discount.dto.js';
+import { GenerateTransactionsReportDto } from '../common/dto/generate-transactions-report.dto.js';
+import { DiscountsReport } from './reports/discounts.report.js';
 
 @Injectable()
 export class DiscountsService {
@@ -29,7 +31,7 @@ export class DiscountsService {
   async findAll(discountQueryDto: DiscountQueryDto) {
     const { limit = 10, offset = 0 } = discountQueryDto;
     const where = this.filters.buildWhere<Discount, DiscountQueryDto>(discountQueryDto, { like: ['code'], date: ['date'] });
-    
+
     const [discounts, total] = await this.discountRepository.findAndCount({
       take: limit,
       skip: offset,
@@ -42,14 +44,14 @@ export class DiscountsService {
   async findOne(id: string) {
     const discount = await this.discountRepository.findOneBy({ id });
 
-    if(!discount) throw new NotFoundException(`El descuento con ID ${id} no existe`);
-    
+    if (!discount) throw new NotFoundException(`El descuento con ID ${id} no existe`);
+
     return discount;
   }
 
   async update(id: string, updateDiscountDto: UpdateDiscountDto) {
     const discount = await this.discountRepository.preload({ id, ...updateDiscountDto });
-    if(!discount) throw new NotFoundException(`El descuento con ID ${id} no existe`);
+    if (!discount) throw new NotFoundException(`El descuento con ID ${id} no existe`);
 
     await this.discountRepository.save(discount);
     return discount;
@@ -58,7 +60,13 @@ export class DiscountsService {
   async remove(id: string) {
     await this.findOne(id);
     await this.discountRepository.delete({ id });
-    
+
     return 'Descuento Eliminado Correctamente';
+  }
+
+  async getDiscountReport(generateTransactionsDto: GenerateTransactionsReportDto) {
+    const discounts = await this.discountRepository.find({ select: { code: true, amount: true, date: true }, where: { date: Between(generateTransactionsDto.start_date, generateTransactionsDto.end_date) } });
+    const buffer = await new DiscountsReport(discounts).toBuffer();
+    return buffer;
   }
 }

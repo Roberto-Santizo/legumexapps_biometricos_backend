@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { EmployeeTransaction } from './entities/employee-transaction.entity.js';
 import { EmployeeTransactionQueryDto } from './dto/employee-transaction-query.dto.js';
 import { Filters } from '../common/providers/filters.js';
-import { GenerateTransactionsReportDto } from './dto/generate-transactions-report.dto.js';
+import { GenerateTransactionsReportDto } from '../common/dto/generate-transactions-report.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { paginate } from '../common/helpers/paginate.js';
