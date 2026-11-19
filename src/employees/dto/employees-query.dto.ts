@@ -29,4 +29,15 @@ export class EmployeesQueryDto extends PaginationDto {
     @IsOptional()
     @IsString()
     auth_dept_id: string;
+
+     @ApiPropertyOptional({
+        description: 'Filtro por CÓDIGO del departamento del empleado',
+        type: String,
+        example: '4028898594b7f9660194b7fb25b00010',
+    })
+    @IsOptional()
+    @IsString()
+    auth_dept_code?: string;
+
+
 }

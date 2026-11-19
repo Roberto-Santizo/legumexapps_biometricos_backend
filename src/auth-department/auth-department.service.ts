@@ -72,6 +72,13 @@ export class AuthDepartmentService {
     return authDepartment;
   }
 
+  async findOneByCode(code: string) {
+    const authDepartment = await this.authDepartmentRepository.findOneBy({ code });
+    if (!authDepartment) throw new NotFoundException(`El departamento con CÓDIGO ${code} no existe`);
+
+    return authDepartment;
+  }
+
   async update(id: string, updateAuthDepartmentDto: UpdateAuthDepartmentDto, user: User) {
     const department = await this.authDepartmentRepository.preload({
       id,

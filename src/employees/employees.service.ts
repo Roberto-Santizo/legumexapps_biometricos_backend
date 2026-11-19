@@ -110,8 +110,11 @@ export class EmployeesService {
   }
 
   async findAll(employeesQueryDto: EmployeesQueryDto) {
-    const { limit = 10, offset = 0 } = employeesQueryDto;
-    const where = this.filters.buildWhere<Employee, EmployeesQueryDto>(employeesQueryDto, { like: ['name', 'auth_dept_id', 'pin'] });
+    const { limit = 10, offset = 0, auth_dept_code, ...filters } = employeesQueryDto;
+
+    const where = this.filters.buildWhere<Employee, Omit<EmployeesQueryDto, 'auth_dept_code'>>(filters, { like: ['name', 'auth_dept_id', 'pin'] });
+
+    if (auth_dept_code) where.authDepartment = { code: auth_dept_code };
 
     const [employees, total] = await this.employeeRepository.findAndCount({
       take: limit,
