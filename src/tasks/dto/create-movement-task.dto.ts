@@ -1,9 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsDateString, IsNotEmpty, IsString, IsUUID, Matches } from "class-validator";
+import { IsDateString, IsNotEmpty, IsOptional, IsString, IsUUID, Matches } from "class-validator";
 
 export class CreateMovementTaskDto {
     @ApiProperty({ description: 'ID de la planificación semanal', format: 'uuid', example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10' })
-    @IsUUID()
+    @IsOptional()
     planification_id: string;
 
     @ApiProperty({ description: 'PIN (código) del empleado a mover; su existencia se valida al ejecutar la tarea', example: '10045' })

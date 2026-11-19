@@ -3,7 +3,7 @@ import { IsDateString, IsOptional, IsString, IsUUID, Matches } from "class-valid
 
 export class CreateCreationTaskDto {
     @ApiProperty({ description: 'ID de la planificación semanal', format: 'uuid', example: '3f2b8c1e-6d4a-4b9e-9c1a-2e7f5d8a9b10' })
-    @IsUUID()
+    @IsOptional()
     planification_id: string;
 
     @ApiProperty({ description: 'PIN (código) del nuevo empleado; no debe pertenecer a un empleado activo', example: '10045' })

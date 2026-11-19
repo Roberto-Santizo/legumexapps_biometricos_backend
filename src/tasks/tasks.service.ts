@@ -85,8 +85,8 @@ export class TasksService {
       this.validateUpdateFields(task.type, updateTaskDto);
 
       const scheduledAt = updateTaskDto.scheduled_at ?? task.scheduled_at.toString();
-      const planification = updateTaskDto.planification_id
-        ? await this.planificationsService.findOneRaw(updateTaskDto.planification_id)
+      const planification = updateTaskDto.planification_id !== undefined
+        ? await this.findPlanification(updateTaskDto.planification_id)
         : task.planification;
 
       this.validateScheduledAtNotPast(scheduledAt);
@@ -136,10 +136,8 @@ export class TasksService {
       if (isActive) throw new BadRequestException(`El código ${pin} ya pertenece a un empleado activo, utilice un movimiento`);
 
       const department = await this.validateAssignment(auth_dept_id, accLevelIds);
-      // La posición es opcional en altas
       const position = position_id ? await this.positionService.findOneRaw(position_id) : null;
 
-      // La foto es opcional; si no existe al ejecutar, el error queda en last_error
       if (file) await this.photosService.upsert(pin, file, user);
 
       const payload = createNewTaskPayload(name, lastName, pin, department.code, accLevelIds, position?.id);
@@ -160,7 +158,6 @@ export class TasksService {
       const department = await this.validateAssignment(auth_dept_id, accLevelIds);
       const position = await this.validatePosition(position_id);
 
-      // El empleado se busca por PIN al ejecutar la tarea (nombre y `previous` se toman ahí)
       const payload = createNewTaskMovementPayload(position.code, pin, department.code, accLevelIds, position.id);
       const task = await this.saveScheduledTask(TaskTypeEnum.movement, payload, scheduled_at, planification, user);
 
@@ -257,7 +254,6 @@ export class TasksService {
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
       const { deptCode, accLevelName, position, code, scheduledAt } = getMovementTaskRowValues(worksheet.getRow(rowNumber));
       const { department, accLevel, employee } = await this.validateMovementFields(deptCode, accLevelName, code);
-      // La disponibilidad de la posición se valida al ejecutar la tarea
       const positionEntity = await this.positionService.findOneRawByCode(String(position));
       const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, positionEntity.id, employee.name, employee.last_name);
       const previous = formatEmployeeEntity(employee);
@@ -318,7 +314,6 @@ export class TasksService {
     return { employee };
   }
 
-  // Valida por ID que existan el departamento y cada nivel de acceso (separados por coma)
   private async validateAssignment(authDeptId: string, accLevelIds: string) {
     const department = await this.authDepartmentService.findOne(authDeptId);
     await this.validateAccLevels(accLevelIds);
@@ -326,7 +321,6 @@ export class TasksService {
     return department;
   }
 
-  // Posición obligatoria (movimientos); su disponibilidad se valida al ejecutar la tarea
   private async validatePosition(positionId?: string) {
     if (!positionId) throw new BadRequestException('La tarea no tiene una posición asignada, indique position_id');
     return this.positionService.findOneRaw(positionId);
@@ -348,7 +342,6 @@ export class TasksService {
     return department;
   }
 
-  // Rechaza campos de payload que no aplican al tipo de la tarea
   private validateUpdateFields(type: TaskTypeEnum, updateTaskDto: UpdateTaskDto) {
     const allowedByType: Record<TaskTypeEnum, (keyof UpdateTaskDto)[]> = {
       [TaskTypeEnum.creation]: ['position_id', 'auth_dept_id', 'accLevelIds', 'name', 'lastName'],
@@ -383,17 +376,15 @@ export class TasksService {
 
     const name = updateTaskDto.name ?? (current as CreationPayload).name;
     const lastName = updateTaskDto.lastName ?? (current as CreationPayload).lastName;
-    // La posición es opcional en altas
     const position = positionId ? await this.positionService.findOneRaw(positionId) : null;
     return createNewTaskPayload(name, lastName, task.pin, department.code, accLevelIds, position?.id);
   }
 
-  // Guarda una tarea individual (sin lote ni archivo de origen) dentro de una planificación
   private async saveScheduledTask(
     type: TaskTypeEnum,
     payload: TaskPayload,
     scheduledAt: string,
-    planification: Planification,
+    planification: Planification | null,
     user: User,
     previous?: Record<string, unknown>
   ) {
@@ -410,17 +401,20 @@ export class TasksService {
     return this.taskRepository.save(newTask);
   }
 
-  // Valida planificación y fecha programada de una tarea individual; devuelve la planificación
-  private async validateSchedule(planificationId: string, scheduledAt: string) {
-    const planification = await this.planificationsService.findOneRaw(planificationId);
+  private async validateSchedule(planificationId: string | null | undefined, scheduledAt: string) {
+    const planification = await this.findPlanification(planificationId);
 
     this.validateScheduledAtNotPast(scheduledAt);
-    this.validateScheduledAtInWeek(scheduledAt, planification);
+    if (planification) this.validateScheduledAtInWeek(scheduledAt, planification);
 
     return planification;
   }
 
-  // Las fechas se comparan como 'YYYY-MM-DD'
+  private async findPlanification(planificationId: string | null | undefined): Promise<Planification | null> {
+    if (!planificationId) return null;
+    return this.planificationsService.findOneRaw(planificationId);
+  }
+
   private validateScheduledAtNotPast(scheduledAt: string) {
     const today = this.dateHandler.getCurrentDate('yyyy-MM-dd');
     if (scheduledAt < today) throw new BadRequestException(`La fecha programada ${scheduledAt} no puede ser anterior a hoy (${today})`);
