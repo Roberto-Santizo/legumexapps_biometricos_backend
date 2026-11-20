@@ -1,17 +1,22 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { chunk } from '../common/helpers/chunk.js';
 import { CreatePositionDto } from './dto/create-position.dto.js';
-import { DateHandlerService } from '../common/services/date-handler.service.js';
 import { Filters } from '../common/providers/filters.js';
-import { IdGeneratorService } from '../common/services/id-generator.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { paginate } from '../common/helpers/paginate.js';
 import { Position } from './entities/position.entity.js';
+import { PositionFactory } from './services/position-factory.service.js';
 import { PositionQueryDto } from './dto/position-query.dto.js';
+import { PositionUploadResult } from './interfaces/index.js';
+import { PositionUploadValidator } from './services/position-upload-validator.service.js';
+import { readPositionRows } from './helpers/position-excel.reader.js';
 import { Repository } from 'typeorm';
 import { UpdatePositionDto } from './dto/update-position.dto.js';
 import { User } from '../auth/entities/user.entity.js';
 import { PositionResource } from './resources/position.resource.js';
+
+const INSERT_BATCH_SIZE = 100;
 
 @Injectable()
 export class PositionService {
@@ -19,8 +24,8 @@ export class PositionService {
     @InjectRepository(Position, MSSQL_CONNECTION)
     private readonly positionRepository: Repository<Position>,
 
-    private readonly date: DateHandlerService,
-    private readonly idGenerator: IdGeneratorService,
+    private readonly positionFactory: PositionFactory,
+    private readonly uploadValidator: PositionUploadValidator,
     private readonly filters: Filters,
   ) { }
 
@@ -28,19 +33,31 @@ export class PositionService {
     const exists = await this.findOneByCode(createPositionDto.code);
     if (exists) throw new BadRequestException(`La posición con código ${exists.code} ya existe`);
 
-    const newPosition = this.positionRepository.create({
-      id: this.idGenerator.generate32CaracterId(),
-      ...createPositionDto,
-      create_time: this.date.getCurrentDate(),
-      update_time: this.date.getCurrentDate(),
-      creater_code: user.email,
-      creater_name: user.name,
-      company_id: 1
-    });
-
+    const newPosition = this.positionFactory.build(createPositionDto, user);
     await this.positionRepository.save(newPosition);
 
     return newPosition;
+  }
+
+  async uploadPositions(file: any, user: User): Promise<PositionUploadResult> {
+    const rows = await readPositionRows(file.buffer);
+    await this.uploadValidator.validate(rows);
+
+    const positions = rows.map(row => this.positionFactory.build(row, user));
+    await this.insertInBatches(positions);
+
+    return {
+      message: `${positions.length} posiciones creadas correctamente`,
+      data: PositionResource.collection(positions),
+    };
+  }
+
+  private async insertInBatches(positions: Position[]) {
+    await this.positionRepository.manager.transaction(async manager => {
+      for (const batch of chunk(positions, INSERT_BATCH_SIZE)) {
+        await manager.insert(Position, batch);
+      }
+    });
   }
 
   async findAll(positionQueryDto: PositionQueryDto) {
@@ -50,7 +67,8 @@ export class PositionService {
     const [positions, total] = await this.positionRepository.findAndCount({
       take: limit,
       skip: offset,
-      where
+      where,
+      order: { code: 'ASC' }
     });
 
     return paginate(PositionResource.collection(positions), total, limit, offset);
