@@ -10,18 +10,25 @@ import { Between, Repository } from 'typeorm';
 import { UpdateDiscountDto } from './dto/update-discount.dto.js';
 import { GenerateTransactionsReportDto } from '../common/dto/generate-transactions-report.dto.js';
 import { DiscountsReport } from './reports/discounts.report.js';
+import { DateHandlerService } from '../common/services/date-handler.service.js';
 
 @Injectable()
 export class DiscountsService {
   constructor(
     @InjectRepository(Discount)
     private readonly discountRepository: Repository<Discount>,
+    private readonly dateService: DateHandlerService,
 
     private readonly employeeService: EmployeesService,
     private readonly filters: Filters,
   ) { }
 
   async create(createDiscountDto: CreateDiscountDto) {
+
+    if (!createDiscountDto.date) {
+      createDiscountDto.date = this.dateService.getCurrentDate('yyyy-MM-dd');
+    }
+
     await this.employeeService.findOneByPin(createDiscountDto.code);
     const discount = this.discountRepository.create(createDiscountDto);
     await this.discountRepository.save(discount);

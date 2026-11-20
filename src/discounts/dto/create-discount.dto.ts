@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsDateString, IsNumber, IsString, Min } from "class-validator";
+import { IsDateString, IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 export class CreateDiscountDto {
     @ApiProperty({
@@ -26,6 +26,7 @@ export class CreateDiscountDto {
         format: 'date',
         example: '2026-11-12',
     })
-    @IsDateString()
-    date: Date;
+    @IsOptional()
+    @IsString()
+    date: string;
 }
