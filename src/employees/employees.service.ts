@@ -174,9 +174,10 @@ export class EmployeesService {
 
   async remove(pin: string, user: User) {
     const employee = await this.findOneByPin(pin);
+    const photo = await this.photosService.getPhotoByCode(pin);
     await this.inactiveEmployeeById(employee.id, user);
     await this.inactiveEmployeeService.remove(pin);
-    await this.photos.delete(`${pin}.jpg`);
+    if (photo) await this.photosService.remove(photo.id);
     return 'Empleado Dado de baja permanentemente';
   }
 

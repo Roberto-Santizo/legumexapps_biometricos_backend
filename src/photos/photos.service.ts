@@ -28,7 +28,9 @@ export class PhotosService {
     const { code } = createPhotoDto;
     const url = `${code}.jpg`;
 
-    await this.getPhotoByCode(code);
+    const photo = await this.getPhotoByCode(code);
+    if (photo) throw new BadRequestException(`El código ${code} ya cuenta con foto asignada`);
+
     await this.photos.put(url, file.buffer, { contentType: file.mimetype });
     const newPhoto = this.photosRepository.create({ code, url, created_by });
 
@@ -83,8 +85,7 @@ export class PhotosService {
 
   async getPhotoByCode(code: string) {
     const photo = await this.photosRepository.findOneBy({ code });
-
-    if (photo) throw new BadRequestException(`El código ${code} ya cuenta con foto asignada`);
+    return photo;
   }
 
   async findBuffer(key: string) {
