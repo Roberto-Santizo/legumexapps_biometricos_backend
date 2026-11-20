@@ -11,7 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../../common/constants/connections.js';
 import { PhotosService } from '../../photos/photos.service.js';
 import { Task, TaskStatusEnum, TaskTypeEnum } from '../../tasks/entities/task.entity.js';
-import { ZkBioaccessService } from '../../employees/services/zkbioaccess.service.js';
+import { InactiveEmployeesService } from '../../inactive-employees/inactive-employees.service.js';
 
 const TIME_ZONE = 'America/Guatemala';
 const DATE_PATTERN = 'yyyy-MM-dd';
@@ -35,7 +35,7 @@ export class CronService {
         private readonly inactiveEmployeeRepository: Repository<InactiveEmployee>,
 
         @Inject()
-        private readonly zbioaccessService: ZkBioaccessService,
+        private readonly inactiveEmployeesService: InactiveEmployeesService,
         private readonly employeesService: EmployeesService,
         private readonly photosService: PhotosService,
 
@@ -146,11 +146,11 @@ export class CronService {
 
         try {
             const inactiveEmployeeExists = this.inactiveEmployeesByCode.get(task.pin);
-            if (inactiveEmployeeExists) await this.zbioaccessService.reActivateEmployee(task.pin);
+            const warning = inactiveEmployeeExists ? await this.inactiveEmployeesService.reActivateWithPhoto(task.pin) : null;
 
             const data = task.payload as CreationPayload;
 
-            const image = await this.photosService.getBuffer(task.pin);
+            const image = inactiveEmployeeExists ? undefined : imageBufferToBase64(await this.photosService.getBuffer(task.pin));
 
             await this.employeesService.createOrUpdateWithPosition({
                 pin: data.pin,
@@ -159,9 +159,10 @@ export class CronService {
                 deptCode: data.deptCode,
                 accLevelIds: data.accLevelIds,
                 position_id: data.position_id
-            }, imageBufferToBase64(image));
+            }, image);
 
             taskStatus = TaskStatusEnum.completed;
+            last_error = warning ? `Alerta: ${warning}` : '';
         } catch (error) {
             this.debugError(error);
             taskStatus = TaskStatusEnum.failed;

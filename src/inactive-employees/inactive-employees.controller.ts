@@ -62,7 +62,8 @@ export class InactiveEmployeesController {
   @Post('/status/reActivateEmployee/:id')
   @ApiOperation({
     summary: 'Reactivar empleado',
-    description: 'Busca el empleado inactivo por ID y lo da de alta nuevamente en ZKBioAccess (/person/reinstated).',
+    description: 'Busca el empleado inactivo por ID, lo da de alta nuevamente en ZKBioAccess (/person/reinstated) y envía su foto (<pin>.jpg) al biométrico (/person/updatePersonnelPhoto) para que lo reconozca. '
+      + 'Si no tiene foto cargada o el biométrico la rechaza, el empleado queda reactivado y el mensaje incluye una alerta.',
   })
   @ApiParam({
     name: 'id',
@@ -71,12 +72,13 @@ export class InactiveEmployeesController {
     example: '4028898594b7f9660194b7fb5d7a0600',
   })
   @ApiCreatedResponse({
-    description: 'Empleado reactivado correctamente',
+    description: 'Empleado reactivado correctamente; si no se pudo enviar la foto, el mensaje incluye "Alerta: ..."',
     schema: { type: 'string', example: 'Empleado dado de alta correctamente.' },
   })
   @ApiInternalServerErrorResponse({
-    description: 'El empleado inactivo no existe o hubo un error al comunicarse con ZKBioAccess ("Please check server logs")',
+    description: 'Error al comunicarse con ZKBioAccess ("Please check server logs")',
   })
+  @ApiNotFoundResponse({ description: 'El empleado con ID <id> no existe' })
   @Auth(ValidRoles.admin, ValidRoles.rrhh)
   reActiveEmployeeById(@Param('id') id: string) {
     return this.inactiveEmployeesService.reActivateEmployeeById(id);

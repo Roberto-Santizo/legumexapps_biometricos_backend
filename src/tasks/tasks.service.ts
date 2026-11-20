@@ -1,7 +1,7 @@
 import { AccLevelService } from '../acc-level/acc-level.service.js';
 import { AuthDepartmentService } from '../auth-department/auth-department.service.js';
 import { BadRequestException, HttpException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { createNewTaskInactivationPayload, createNewTaskMovementPayload, createNewTaskPayload, formatEmployeeEntity, getCreationTaskRowValues, getInactivationTaskRowValues, getMovementTaskRowValues } from './helpers/task-service.helpers.js';
+import { createNewTaskInactivationPayload, createNewTaskMovementPayload, createNewTaskPayload, getCreationTaskRowValues, getInactivationTaskRowValues, getMovementTaskRowValues } from './helpers/task-service.helpers.js';
 import { DatabaseHelpers } from '../common/providers/database-helpers.js';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { DateHandlerService } from '../common/services/date-handler.service.js';
@@ -216,102 +216,143 @@ export class TasksService {
     type: TaskTypeEnum,
     user: User,
     queryRunner: QueryRunner,
-    previous?: Record<string, unknown>
+    planification: Planification | null
   ) {
     const newTask = this.taskRepository.create({
       type: type,
       pin: payload.pin,
       payload: payload,
       scheduled_at: scheduledAt,
+      planification,
       batch_id: batch,
       source_row: `${rowNumber}`,
       source_file: filename,
       created_by: user,
-      previous: previous
+      previous: null
     });
 
     await queryRunner.manager.save(newTask);
   }
 
-  private async createTaskCreation(filename: string, user: User, queryRunner: QueryRunner, worksheet: ExcelJS.Worksheet) {
-    const batch = this.idGenerator.generate32CaracterId();
+  private async resolveRowSchedule(
+    queryRunner: QueryRunner,
+    planifications: Map<string, Planification>,
+    scheduledAt: string,
+    planificationWeek: { week: number; year: number } | null
+  ) {
+    this.validateScheduledAtNotPast(scheduledAt);
+    if (!planificationWeek) return null;
+
+    const { week, year } = planificationWeek;
+    const key = `${year}-${week}`;
+    let planification = planifications.get(key);
+
+    if (!planification) {
+      const found = await queryRunner.manager.findOneBy(Planification, { year, week });
+      if (!found) throw new NotFoundException(`La planificación de la semana ${week} del ${year} no existe`);
+      planification = found;
+      planifications.set(key, planification);
+    }
+
+    this.validateScheduledAtInWeek(scheduledAt, planification);
+    return planification;
+  }
+
+  private async processRows(worksheet: ExcelJS.Worksheet, handler: (row: ExcelJS.Row, rowNumber: number) => Promise<void>) {
+    let processed = 0;
 
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const { deptCode, accLevelName, position, name, code, scheduledAt } = getCreationTaskRowValues(worksheet.getRow(rowNumber));
-      const { department, accLevel } = await this.validateCreationFields(deptCode, accLevelName);
-      // La posición es opcional; su disponibilidad se valida al ejecutar la tarea
-      const positionEntity = position ? await this.positionService.findOneRawByCode(String(position)) : null;
-      const payload = createNewTaskPayload(name, position ? String(position) : '', code, department.code, accLevel.id, positionEntity?.id)
-      await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.creation, user, queryRunner);
+      const row = worksheet.getRow(rowNumber);
+      if (!row.hasValues) continue;
+
+      try {
+        await handler(row, rowNumber);
+        processed++;
+      } catch (error) {
+        if (error instanceof HttpException) throw new HttpException(`Fila ${rowNumber}: ${error.message}`, error.getStatus());
+        throw error;
+      }
     }
+
+    if (processed === 0) throw new BadRequestException('El archivo no contiene filas para procesar');
+  }
+
+  private async createTaskCreation(filename: string, user: User, queryRunner: QueryRunner, worksheet: ExcelJS.Worksheet) {
+    const batch = this.idGenerator.generate32CaracterId();
+    const catalogs = await this.loadCatalogs();
+    const planifications = new Map<string, Planification>();
+
+    await this.processRows(worksheet, async (row, rowNumber) => {
+      const { deptCode, accLevelName, position, name, code, scheduledAt, planificationWeek } = getCreationTaskRowValues(row);
+      const planification = await this.resolveRowSchedule(queryRunner, planifications, scheduledAt, planificationWeek);
+
+      const isActive = await this.employeeService.existsByPin(code);
+      if (isActive) throw new BadRequestException(`El código ${code} ya pertenece a un empleado activo, utilice un movimiento`);
+
+      const { department, accLevel } = this.findCatalogEntries(catalogs, deptCode, accLevelName);
+      const positionEntity = position ? await this.positionService.findOneRawByCode(position) : null;
+
+      const payload = createNewTaskPayload(name, position, code, department.code, accLevel.id, positionEntity?.id);
+      await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.creation, user, queryRunner, planification);
+    });
 
     return 'Altas programadas correctamente';
   }
 
   private async createTaskMovement(filename: string, user: User, queryRunner: QueryRunner, worksheet: ExcelJS.Worksheet) {
     const batch = this.idGenerator.generate32CaracterId();
+    const catalogs = await this.loadCatalogs();
+    const planifications = new Map<string, Planification>();
 
-    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const { deptCode, accLevelName, position, code, scheduledAt } = getMovementTaskRowValues(worksheet.getRow(rowNumber));
-      const { department, accLevel, employee } = await this.validateMovementFields(deptCode, accLevelName, code);
-      const positionEntity = await this.positionService.findOneRawByCode(String(position));
-      const payload = createNewTaskMovementPayload(position, code, department.code, accLevel.id, positionEntity.id, employee.name, employee.last_name);
-      const previous = formatEmployeeEntity(employee);
-      await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.movement, user, queryRunner, previous);
-    }
+    await this.processRows(worksheet, async (row, rowNumber) => {
+      const { deptCode, accLevelName, position, code, scheduledAt, planificationWeek } = getMovementTaskRowValues(row);
+      const planification = await this.resolveRowSchedule(queryRunner, planifications, scheduledAt, planificationWeek);
+
+      const { department, accLevel } = this.findCatalogEntries(catalogs, deptCode, accLevelName);
+      const positionEntity = await this.positionService.findOneRawByCode(position);
+
+      const payload = createNewTaskMovementPayload(positionEntity.code, code, department.code, accLevel.id, positionEntity.id);
+      await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.movement, user, queryRunner, planification);
+    });
 
     return 'Movimientos Programados Correctamente';
   }
 
-  private async createTaskInactivation(filename: any, user: User, queryRunner: QueryRunner, worksheet: ExcelJS.Worksheet) {
+  private async createTaskInactivation(filename: string, user: User, queryRunner: QueryRunner, worksheet: ExcelJS.Worksheet) {
     const batch = this.idGenerator.generate32CaracterId();
+    const planifications = new Map<string, Planification>();
 
-    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const { code, scheduledAt, type } = getInactivationTaskRowValues(worksheet.getRow(rowNumber));
-      await this.validateInactivationFields(code);
-      const payload = createNewTaskInactivationPayload(code, scheduledAt, type)
-      await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.inactivate, user, queryRunner);
-    }
+    await this.processRows(worksheet, async (row, rowNumber) => {
+      const { code, scheduledAt, type, planificationWeek } = getInactivationTaskRowValues(row);
+      const planification = await this.resolveRowSchedule(queryRunner, planifications, scheduledAt, planificationWeek);
+
+      const payload = createNewTaskInactivationPayload(code, scheduledAt, type);
+      await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.inactivate, user, queryRunner, planification);
+    });
 
     return 'Bajas Programados Correctamente';
   }
 
-  private async validateCreationFields(deptCode: string, accLevelName: string) {
-    const departments = await this.authDepartmentService.getAll();
-    const accLevels = await this.accLevelService.getAll();
+  private async loadCatalogs() {
+    const [departments, accLevels] = await Promise.all([
+      this.authDepartmentService.getAll(),
+      this.accLevelService.getAll(),
+    ]);
 
-    const department = departments.find(dept => dept.code === deptCode);
-    const accLevel = accLevels.find(accLevel => accLevel.name === accLevelName);
+    return {
+      departments: new Map(departments.map(dept => [dept.code, dept])),
+      accLevels: new Map(accLevels.map(level => [level.name, level])),
+    };
+  }
+
+  private findCatalogEntries(catalogs: Awaited<ReturnType<TasksService['loadCatalogs']>>, deptCode: string, accLevelName: string) {
+    const department = catalogs.departments.get(deptCode);
+    const accLevel = catalogs.accLevels.get(accLevelName);
 
     if (!department) throw new NotFoundException(`El departamento ${deptCode} no existe`);
     if (!accLevel) throw new NotFoundException(`El nivel de acceso ${accLevelName} no existe`);
 
-    return { department, accLevel }
-  }
-
-  private async validateMovementFields(deptCode: string, accLevelName: string, code: string) {
-    const departments = await this.authDepartmentService.getAll();
-    const accLevels = await this.accLevelService.getAll();
-    const employees = await this.employeeService.getAll();
-
-    const department = departments.find(dept => dept.code === deptCode);
-    const accLevel = accLevels.find(accLevel => accLevel.name === accLevelName);
-    const employee = employees.find(employee => employee.pin === code);
-
-    if (!department) throw new NotFoundException(`El departamento ${deptCode} no existe`);
-    if (!accLevel) throw new NotFoundException(`El nivel de acceso ${accLevelName} no existe`);
-    if (!employee) throw new NotFoundException(`El empleado con código ${code} no existe`);
-
-    return { department, accLevel, employee }
-  }
-
-  private async validateInactivationFields(code: string) {
-    const employees = await this.employeeService.getAll();
-    const employee = employees.find(employee => employee.pin === code);
-
-    if (!employee) throw new NotFoundException(`El empleado con código ${code} no existe`);
-
-    return { employee };
+    return { department, accLevel };
   }
 
   private async validateAssignment(authDeptId: string, accLevelIds: string) {

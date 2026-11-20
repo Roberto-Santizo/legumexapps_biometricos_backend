@@ -8,6 +8,7 @@ import { AuthModule } from '../auth/auth.module.js';
 import { CommonModule } from '../common/common.module.js';
 import { AuthDepartmentModule } from '../auth-department/auth-department.module.js';
 import { EmployeesModule } from '../employees/employees.module.js';
+import { PhotosModule } from '../photos/photos.module.js';
 
 @Module({
   controllers: [InactiveEmployeesController],
@@ -17,6 +18,7 @@ import { EmployeesModule } from '../employees/employees.module.js';
     AuthModule,
     CommonModule,
     AuthDepartmentModule,
+    PhotosModule,
     forwardRef(() => EmployeesModule)
   ],
   exports:[

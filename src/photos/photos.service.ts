@@ -87,6 +87,12 @@ export class PhotosService {
     if (photo) throw new BadRequestException(`El código ${code} ya cuenta con foto asignada`);
   }
 
+  async findBuffer(key: string) {
+    const exists = await this.photos.exists(`${key}.jpg`);
+    if (!exists) return null;
+    return this.getBuffer(key);
+  }
+
   async getBuffer(key: string) {
     try {
       const image = await this.photos.getBuffer(`${key}.jpg`);

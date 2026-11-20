@@ -45,9 +45,11 @@ export class TasksController {
   @ApiOperation({
     summary: 'Programar tareas desde Excel',
     description: 'Lee la primera hoja del archivo Excel (desde la fila 2) y programa una tarea por fila, todas en un mismo lote y dentro de una transacción. Columnas esperadas según el tipo: '
-      + 'creation (alta): posición, código, nombre, código de departamento, nivel de acceso, fecha programada; '
-      + 'movement (movimiento): posición, código, código de departamento, nivel de acceso, fecha programada; '
-      + 'inactivate (baja): código, fecha programada.',
+      + 'creation (alta): posición (opcional), código, nombre, código de departamento, nivel de acceso, fecha programada, semana, año; '
+      + 'movement (movimiento): posición, código, código de departamento, nivel de acceso, fecha programada, semana, año; '
+      + 'inactivate (baja): código, fecha programada, tipo de baja (PERMANENTE o TEMPORAL), semana, año. '
+      + 'La fecha programada debe ser YYYY-MM-DD (o celda de fecha), hoy o posterior. Semana y año son opcionales (ambos o ninguno); si se indican, la planificación debe existir, se asocia a la tarea y la fecha debe caer dentro de esa semana. '
+      + 'Los errores indican la fila ("Fila N: ...") y revierten toda la carga.',
   })
   @ApiParam({
     name: 'type',
@@ -72,12 +74,12 @@ export class TasksController {
     schema: { type: 'string', example: 'Movimientos Programados Correctamente' },
   })
   @ApiBadRequestResponse({
-    description: 'No se envió archivo o no es .xlsx ("Make sure that the file exists and its an xlxs"), tipo inválido ("El tipo <type> no es una acción válida"), fila incompleta ("Asegurese que el excel cumpla con el formato esperado") o ya existe una tarea pendiente del mismo tipo para el PIN',
+    description: 'No se envió archivo o no es .xlsx ("Make sure that the file exists and its an xlxs"), tipo inválido ("El tipo <type> no es una acción válida"), fila incompleta ("Asegurese que el excel cumpla con el formato esperado"), archivo sin filas, fecha inválida o anterior a hoy, fecha fuera de la semana de la planificación, semana/año incompletos o inválidos, tipo de baja inválido o, en altas, PIN de un empleado activo',
   })
   @ApiUnauthorizedResponse({ description: UNAUTHORIZED_DESCRIPTION })
   @ApiForbiddenResponse({ description: FORBIDDEN_DESCRIPTION })
   @ApiNotFoundResponse({
-    description: 'No se encontró la hoja de Excel, o no existe el departamento ("El departamento <deptCode> no existe"), el nivel de acceso ("El nivel de acceso <nombre> no existe") o el empleado ("El empleado con código <code> no existe")',
+    description: 'No se encontró la hoja de Excel, o no existe el departamento ("El departamento <deptCode> no existe"), el nivel de acceso ("El nivel de acceso <nombre> no existe"), la posición ("La posición con código <code> no existe") o la planificación ("La planificación de la semana <semana> del <año> no existe")',
   })
   @ApiInternalServerErrorResponse({ description: 'Error al guardar las tareas en la base de datos' })
   create(@Param('type') type: string, @UploadedFile() file: any, @GetUser() user: User) {

@@ -1,6 +1,8 @@
 import { InactiveEmployee } from './entities/inactive-employee.entity.js';
 import { InactiveEmployeeResource } from './resources/inactive-employee.resource.js';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { imageBufferToBase64 } from '../common/helpers/base-64-enconder.js';
+import { PhotosService } from '../photos/photos.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MSSQL_CONNECTION } from '../common/constants/connections.js';
 import { Repository } from 'typeorm';
@@ -12,13 +14,16 @@ import { paginate } from '../common/helpers/paginate.js';
 
 @Injectable()
 export class InactiveEmployeesService {
+  private readonly logger = new Logger(InactiveEmployeesService.name);
+
   constructor(
     @InjectRepository(InactiveEmployee, MSSQL_CONNECTION)
     private readonly inactiveEmployeeRepository: Repository<InactiveEmployee>,
 
     private readonly zkBioaccessService: ZkBioaccessService,
     private readonly databaseHelpers: DatabaseHelpers,
-    private readonly filters: Filters
+    private readonly filters: Filters,
+    private readonly photosService: PhotosService
   ) { }
 
 
@@ -49,11 +54,31 @@ export class InactiveEmployeesService {
   async reActivateEmployeeById(id: string) {
     try {
       const employee = await this.findOne(id);
-      await this.zkBioaccessService.reActivateEmployee(employee.pin);
-      return 'Empleado dado de alta correctamente.'
+      const warning = await this.reActivateWithPhoto(employee.pin);
+      return warning ? `Empleado dado de alta correctamente. Alerta: ${warning}` : 'Empleado dado de alta correctamente.';
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.databaseHelpers.handleExeptions(error);
     }
+  }
+
+  async reActivateWithPhoto(pin: string): Promise<string | null> {
+    await this.zkBioaccessService.reActivateEmployee(pin);
+
+    const image = await this.photosService.findBuffer(pin);
+    if (!image) return this.warn(`El empleado ${pin} fue reactivado sin foto porque no tiene una foto cargada; el biométrico no lo reconocerá hasta que se le asigne una`);
+
+    try {
+      await this.zkBioaccessService.updateEmployeePhoto(pin, imageBufferToBase64(image));
+      return null;
+    } catch (error) {
+      return this.warn(`El empleado ${pin} fue reactivado pero no se pudo enviar su foto al biométrico: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private warn(message: string) {
+    this.logger.warn(message);
+    return message;
   }
 
   async remove(pin: string) {
