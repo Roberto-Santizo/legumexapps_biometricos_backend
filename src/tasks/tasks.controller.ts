@@ -45,7 +45,7 @@ export class TasksController {
   @ApiOperation({
     summary: 'Programar tareas desde Excel',
     description: 'Lee la primera hoja del archivo Excel (desde la fila 2) y programa una tarea por fila, todas en un mismo lote y dentro de una transacción. Columnas esperadas según el tipo: '
-      + 'creation (alta): posición (opcional), código, nombre, código de departamento, nivel de acceso, fecha programada, semana, año; '
+      + 'creation (alta): posición (opcional), código, nombre, apellidos, código de departamento, nivel de acceso, fecha programada, semana, año; '
       + 'movement (movimiento): posición, código, código de departamento, nivel de acceso, fecha programada, semana, año; '
       + 'inactivate (baja): código, fecha programada, tipo de baja (PERMANENTE o TEMPORAL), semana, año. '
       + 'La fecha programada debe ser YYYY-MM-DD (o celda de fecha), hoy o posterior. Semana y año son opcionales (ambos o ninguno); si se indican, la planificación debe existir, se asocia a la tarea y la fecha debe caer dentro de esa semana. '

@@ -37,7 +37,6 @@ export class PhotosService {
     await this.photosRepository.save(newPhoto);
   }
 
-  // Guarda o sobrescribe <code>.jpg y crea el registro Photo si no existe
   async upsert(code: string, file: any, created_by: User) {
     const url = `${code}.jpg`;
 

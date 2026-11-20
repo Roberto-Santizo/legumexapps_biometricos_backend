@@ -49,14 +49,15 @@ export const getCreationTaskRowValues = (row: ExcelJS.Row) => {
     const position = getCellText(row, 1);
     const code = getCellText(row, 2);
     const name = getCellText(row, 3);
-    const deptCode = getCellText(row, 4);
-    const accLevelName = getCellText(row, 5);
-    const scheduledAt = getCellDate(row, 6);
-    const planificationWeek = getPlanificationWeek(row, 7, 8);
+    const lastName = getCellText(row, 4);
+    const deptCode = getCellText(row, 5);
+    const accLevelName = getCellText(row, 6);
+    const scheduledAt = getCellDate(row, 7);
+    const planificationWeek = getPlanificationWeek(row, 8, 9);
 
-    if (!code || !deptCode || !accLevelName || !scheduledAt || !name) throw new BadRequestException(FORMAT_ERROR);
+    if (!code || !deptCode || !accLevelName || !scheduledAt || !name || !lastName) throw new BadRequestException(FORMAT_ERROR);
 
-    return { position, code, name, scheduledAt, deptCode, accLevelName, planificationWeek }
+    return { position, code, name, lastName, scheduledAt, deptCode, accLevelName, planificationWeek }
 }
 
 export const getMovementTaskRowValues = (row: ExcelJS.Row) => {

@@ -283,7 +283,7 @@ export class TasksService {
     const planifications = new Map<string, Planification>();
 
     await this.processRows(worksheet, async (row, rowNumber) => {
-      const { deptCode, accLevelName, position, name, code, scheduledAt, planificationWeek } = getCreationTaskRowValues(row);
+      const { deptCode, accLevelName, position, name, lastName, code, scheduledAt, planificationWeek } = getCreationTaskRowValues(row);
       const planification = await this.resolveRowSchedule(queryRunner, planifications, scheduledAt, planificationWeek);
 
       const isActive = await this.employeeService.existsByPin(code);
@@ -292,7 +292,7 @@ export class TasksService {
       const { department, accLevel } = this.findCatalogEntries(catalogs, deptCode, accLevelName);
       const positionEntity = position ? await this.positionService.findOneRawByCode(position) : null;
 
-      const payload = createNewTaskPayload(name, position, code, department.code, accLevel.id, positionEntity?.id);
+      const payload = createNewTaskPayload(name, lastName, code, department.code, accLevel.id, positionEntity?.id);
       await this.commitTaskRow(payload, scheduledAt, batch, rowNumber, filename, TaskTypeEnum.creation, user, queryRunner, planification);
     });
 
