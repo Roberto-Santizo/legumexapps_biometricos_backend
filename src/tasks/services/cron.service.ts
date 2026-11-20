@@ -42,7 +42,7 @@ export class CronService {
         private readonly dateService: DateHandlerService
     ) { }
 
-    @Cron(CronExpression.EVERY_10_SECONDS, { timeZone: TIME_ZONE })
+    @Cron(CronExpression.EVERY_DAY_AT_5AM, { timeZone: TIME_ZONE })
     async executeTasks() {
         const today = this.getToday();
         const tasksPending = await this.taskRepository.find({
