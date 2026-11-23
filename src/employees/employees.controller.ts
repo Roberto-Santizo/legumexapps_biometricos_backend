@@ -144,6 +144,12 @@ export class EmployeesController {
     return this.employeesService.findEmployeesByLineCode(pos);
   }
 
+  @Get('/getEmployeesByDepartmentCode/:code')
+   @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  findEmployeesByDepartmentCode(@Param('code') pos: string){
+    return this.employeesService.findEmployeesByDepartmentCode(pos);
+  }
+
   @Get(':code')
   @Auth(ValidRoles.admin, ValidRoles.rrhh, ValidRoles.merlot)
   @ApiOperation({

@@ -137,6 +137,17 @@ export class EmployeesService {
     return EmployeeResource.collection(employees);
   }
 
+  async findEmployeesByDepartmentCode(code: string) {
+    const employees = await this.employeeRepository.find({
+      // where: { position: { code: Like(`%${code}%`) } },
+      where: { authDepartment: { code: Like(`%${code}%`) } },
+      relations: { position: true },
+      order: { last_name: 'ASC' }
+    });
+
+    return EmployeeResource.collection(employees);
+  }
+
   async getAll() {
     const employees = await this.employeeRepository.find();
     return employees;
