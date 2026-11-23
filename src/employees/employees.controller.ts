@@ -128,7 +128,7 @@ export class EmployeesController {
   }
 
   @Get()
-  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @Auth(ValidRoles.admin, ValidRoles.rrhh, ValidRoles.merlot)
   @ApiOperation({
     summary: 'Listar empleados',
     description: 'Devuelve los empleados paginados (con su departamento y el código e ID de su posición), con filtros opcionales por nombre, PIN e ID de departamento (búsqueda parcial). La respuesta incluye `data`, `total`, `totalPages` y `currentPage`.',
@@ -145,7 +145,7 @@ export class EmployeesController {
   }
 
   @Get(':code')
-  @Auth(ValidRoles.admin, ValidRoles.rrhh)
+  @Auth(ValidRoles.admin, ValidRoles.rrhh, ValidRoles.merlot)
   @ApiOperation({
     summary: 'Obtener empleado',
     description: 'Devuelve los datos de un empleado por su PIN (código), incluyendo su departamento y el código e ID de su posición.',
